@@ -1,0 +1,36 @@
+@startuml Sequence_Provider_DELETE
+
+header Car Rental Sequence Diagram
+footer Page %page% of %lastpage%
+title "Delete Car Provider (DELETE /api/v1/car-providers/:id)"
+
+participant "Client" as client
+participant "<<javaScript>>\n:server" as server
+participant "<<router>>\n:carProviders" as routerCarProviders
+participant "<<controllers>>\n:carProviders" as controllersCarProviders
+participant "<<model>>\n:CarProvider" as modelCarProvider
+participant "<<model>>\n:Booking" as modelBooking
+database "<<MongoDB>>\n:carproviders" as CarProvidersDatabase
+
+client->server ++:req.delete('/api/v1/car-providers/:id')
+server->routerCarProviders ++:app.use('/api/v1/car-providers',carProviders)
+routerCarProviders -> controllersCarProviders ++:deleteCarProvider()
+controllersCarProviders->modelCarProvider ++:findById(req.params.id)
+modelCarProvider ->CarProvidersDatabase ++: CarProviderSchema
+CarProvidersDatabase -->modelCarProvider --: carProvider
+controllersCarProviders <- modelCarProvider --:carProvider
+alt carProvider not found
+    controllersCarProviders->client --:response
+else found
+    controllersCarProviders->modelBooking ++:deleteMany({carProvider: id})
+    modelBooking->CarProvidersDatabase ++: BookingSchema
+    CarProvidersDatabase-->modelBooking --: deleted
+    controllersCarProviders<--modelBooking --: ok
+    controllersCarProviders->modelCarProvider ++:deleteOne({_id: id})
+    modelCarProvider->CarProvidersDatabase ++: CarProviderSchema
+    CarProvidersDatabase-->modelCarProvider --: deleted
+    controllersCarProviders<--modelCarProvider --: ok
+    controllersCarProviders->client --:response
+end
+
+@enduml

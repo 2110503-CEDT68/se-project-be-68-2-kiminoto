@@ -1,0 +1,70 @@
+@startuml Class_Diagram
+left to right direction
+package "CarRental"{
+    class "<<Application>>\nCarRentalService" as CarRentalService{}
+
+    class "<<Resource>>\nCarProviders" as ResourceCarProviders{
+        <<GET>> +getCarProviders():CarProvider
+        <<POST>> +createCarProvider():CarProvider
+    }
+
+    class "<<Resource>>\nCarProvider" as ResourceCarProvider {
+        <<GET>> +getCarProvider(): CarProvider
+        <<PUT>> +updateCarProvider(): CarProvider
+        <<DELETE>> +deleteCarProvider(): void
+    }
+
+    class "<<Representation>>\nCarProvider" as RepresentationCarProvider {
+        -name
+        -address
+        -tel
+    }
+
+    class "<<Resource>>\nBookings" as ResourceBookings{
+        <<GET>> +getBookings():Booking
+        <<POST>> +addBooking():Booking
+    }
+
+    class "<<Resource>>\nBooking" as ResourceBooking {
+        <<GET>> +getBooking(): Booking
+        <<PUT>> +updateBooking(): Booking
+        <<DELETE>> +deleteBooking(): void
+    }
+
+    class "<<Representation>>\nBooking" as RepresentationBooking {
+        -bookDate
+        -user
+        -carProvider
+        -createdAt
+    }
+
+    class "<<Resource>>\nAuth" as ResourceAuth{
+        <<POST>> +register():User
+        <<POST>> +login():User
+        <<GET>> +getMe():User
+        <<GET>> +logout():void
+    }
+
+    class "<<Representation>>\nUser" as RepresentationUser {
+        -name
+        -tel
+        -email
+        -role
+        -password
+        -createdAt
+    }
+
+}
+
+CarRentalService ..> ResourceCarProviders:"/car-providers\n<<Path>>"
+ResourceCarProviders ..> ResourceCarProvider: "/{id}\n<<Path>>"
+ResourceCarProvider ..> RepresentationCarProvider: "<<use>>"
+
+CarRentalService ..> ResourceBookings:"/bookings\n<<Path>>"
+ResourceBookings ..> ResourceBooking: "/{id}\n<<Path>>"
+ResourceBooking ..> RepresentationBooking: "<<use>>"
+
+CarRentalService ..> ResourceAuth:"/auth\n<<Path>>"
+ResourceAuth ..> RepresentationUser: "<<use>>"
+
+@enduml

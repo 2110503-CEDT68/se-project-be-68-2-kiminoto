@@ -1,0 +1,1557 @@
+{
+    "info": {
+        "_postman_id": "73f1d947-8853-4593-b646-1038df562a90",
+        "name": "Car Rental",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "48212227",
+        "_collection_link": "https://go.postman.co/collection/48212227-73f1d947-8853-4593-b646-1038df562a90?source=collection_link"
+    },
+    "item": [
+        {
+            "name": "1 - User Registration + Validation Check",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "const ts = Date.now();",
+                            "pm.environment.set('USER_EMAIL', `testuser_${ts}@demo.com`);",
+                            "pm.environment.set('USER_PASSWORD', '123456');"
+                        ],
+                        "type": "text/javascript"
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Registration successful', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Demo User\",\n    \"email\": \"{{USER_EMAIL}}\",\n    \"password\": \"{{USER_PASSWORD}}\",\n    \"tel\": \"0800000001\",\n    \"role\": \"user\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/auth/register",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "auth",
+                        "register"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "1b - Validation: Register with Missing Field",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 400 - Validation fails when fields are missing', function () {",
+                            "    pm.response.to.have.status(400);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is false', function () {",
+                            "    pm.expect(json.success).to.be.false;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"bad_user@demo.com\",\n    \"password\": \"123456\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/auth/register",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "auth",
+                        "register"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "1c - Validation: Register with existing user",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 400 - Validation fails when register with existing user', function () {",
+                            "    pm.response.to.have.status(400);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is false', function () {",
+                            "    pm.expect(json.success).to.be.false;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Demo User\",\n    \"email\": \"{{USER_EMAIL}}\",\n    \"password\": \"{{USER_PASSWORD}}\",\n    \"tel\": \"0800000001\",\n    \"role\": \"user\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/auth/register",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "auth",
+                        "register"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "2 - User Log-in",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Login successful', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "const json = pm.response.json();",
+                            "pm.test('Response has token', function () {",
+                            "    pm.expect(json.token).to.be.a('string');",
+                            "});",
+                            "",
+                            "if (json.token) {",
+                            "    pm.environment.set('USER_TOKEN', json.token);",
+                            "}",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"{{USER_EMAIL}}\",\n    \"password\": \"{{USER_PASSWORD}}\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/auth/login",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "3 - User View Product (Car Providers)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Get successfully', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "const json = pm.response.json();",
+                            "pm.test('At least one provider exists', function () {",
+                            "    pm.expect(json.count).to.be.greaterThan(0);",
+                            "});",
+                            "",
+                            "if (json.data && json.data.length > 0) {",
+                            "    pm.environment.set('PROVIDER_ID', json.data[0]._id);",
+                            "}",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/car-providers",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "car-providers"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "4 - User Create Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200 - Booking created', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "const json = pm.response.json();",
+                            "if (json.data && json.data._id) {",
+                            "    pm.environment.set('BOOKING_ID', json.data._id);",
+                            "}",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bookDate\": \"2026-12-01T09:00:00.000Z\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/car-providers/:provider_id/bookings",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "car-providers",
+                        ":provider_id",
+                        "bookings"
+                    ],
+                    "variable": [
+                        {
+                            "key": "provider_id",
+                            "value": "{{PROVIDER_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "4b - Create Second Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Second booking created', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is true', function () {",
+                            "    pm.expect(json.success).to.be.true;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bookDate\": \"2026-12-02T09:00:00.000Z\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/car-providers/:provider_id/bookings",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "car-providers",
+                        ":provider_id",
+                        "bookings"
+                    ],
+                    "variable": [
+                        {
+                            "key": "provider_id",
+                            "value": "{{PROVIDER_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "4c - Invalid Booking With No Body",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 500 - Cannot create booking', function () {",
+                            "    pm.response.to.have.status(500);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is false', function () {",
+                            "    pm.expect(json.success).to.be.false;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/car-providers/:provider_id/bookings",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "car-providers",
+                        ":provider_id",
+                        "bookings"
+                    ],
+                    "variable": [
+                        {
+                            "key": "provider_id",
+                            "value": "{{PROVIDER_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "4d - Create Third Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Third booking created', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is true', function () {",
+                            "    pm.expect(json.success).to.be.true;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bookDate\": \"2026-12-03T09:00:00.000Z\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/car-providers/:provider_id/bookings",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "car-providers",
+                        ":provider_id",
+                        "bookings"
+                    ],
+                    "variable": [
+                        {
+                            "key": "provider_id",
+                            "value": "{{PROVIDER_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "4e - Create Fourth Booking (exceeds 3 limit)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 400 - Cannot exceed 3 bookings', function () {",
+                            "    pm.response.to.have.status(400);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is false', function () {",
+                            "    pm.expect(json.success).to.be.false;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bookDate\": \"2026-12-04T09:00:00.000Z\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/car-providers/:provider_id/bookings",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "car-providers",
+                        ":provider_id",
+                        "bookings"
+                    ],
+                    "variable": [
+                        {
+                            "key": "provider_id",
+                            "value": "{{PROVIDER_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "5 - User View Own Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Got user bookings', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('Expect 3 bookings returned', function () {",
+                            "    pm.expect(json.data).to.be.an('array');",
+                            "    pm.expect(json.count).to.equal(3);",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "6 - User Edit Own Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Booking updated', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is true', function () {",
+                            "    pm.expect(json.success).to.be.true;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bookDate\": \"2027-01-15T09:00:00.000Z\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "7 - User Delete Own Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Booking deleted', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is true', function () {",
+                            "    pm.expect(json.success).to.be.true;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "8 - User Log-out",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Logged out', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "pm.environment.set('USER_TOKEN', '');",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{USER_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/auth/logout",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "auth",
+                        "logout"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "9 - Admin Log-in",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Admin login successful', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('Response has token', function () {",
+                            "    pm.expect(json.token).to.be.a('string');",
+                            "});",
+                            "",
+                            "if (json.token) {",
+                            "    pm.environment.set('ADMIN_TOKEN', json.token);",
+                            "}",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"column_space@gmail.com\",\n    \"password\": \"123456\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/auth/login",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "10 - Admin View Any Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Admin got all bookings', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('Admin sees all bookings', function () {",
+                            "    pm.expect(json.data).to.be.an('array');",
+                            "    pm.expect(json.data.length).to.be.above(0);",
+                            "});",
+                            "if (json.data && json.data.length > 0) {",
+                            "    pm.environment.set('ADMIN_TARGET_BOOKING_ID', json.data[0]._id);",
+                            "}",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "11 - Admin Edit Any Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Admin updated booking', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is true', function () {",
+                            "    pm.expect(json.success).to.be.true;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bookDate\": \"2027-06-01T09:00:00.000Z\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "12 - Add Review (Fail: Booking Not Completed)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 400 - Cannot review an active booking', () => pm.response.to.have.status(400));",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"rating\": 5,\n    \"comment\": \"Great service!\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id/reviews",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id",
+                        "reviews"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "12b - Admin Set Booking to Completed",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200 - Booking marked completed', () => pm.response.to.have.status(200));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"status\": \"completed\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "12c - Add Review (Fail: Offensive Comment)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 400 - Offensive comment rejected', () => pm.response.to.have.status(400));",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"rating\": 1,\n    \"comment\": \"This place is absolute garbage! The staff are idiots!\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id/reviews",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id",
+                        "reviews"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "12d - Add Review (Success)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201 - Review added', () => pm.response.to.have.status(201));",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"rating\": 5,\n    \"comment\": \"The service was excellent. The car was clean and the staff were very professional.\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id/reviews",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id",
+                        "reviews"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "13 - Edit Review (Fail: Offensive Comment)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 400 - Offensive edit rejected', () => pm.response.to.have.status(400));",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"rating\": 1,\n    \"comment\": \"Actually this place is awful and everyone there is an idiot!\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id/reviews",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id",
+                        "reviews"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "13b - Edit Review (Success)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200 - Review updated', () => pm.response.to.have.status(200));",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"rating\": 4,\n    \"comment\": \"Upon reflection, the service was very good. The cars were clean and the staff were professional.\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id/reviews",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id",
+                        "reviews"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "14 - Delete Review",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200 - Review deleted', () => pm.response.to.have.status(200));",
+                            "console.log(pm.response.json());"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id/reviews",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id",
+                        "reviews"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "15 - Admin Delete Any Booking",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status code is 200 - Admin deleted booking', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "const json = pm.response.json();",
+                            "pm.test('success is true', function () {",
+                            "    pm.expect(json.success).to.be.true;",
+                            "});",
+                            "console.log(json);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ADMIN_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:5000/api/v1/bookings/:booking_id",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "v1",
+                        "bookings",
+                        ":booking_id"
+                    ],
+                    "variable": [
+                        {
+                            "key": "booking_id",
+                            "value": "{{ADMIN_TARGET_BOOKING_ID}}"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        }
+    ],
+    "variable": []
+}

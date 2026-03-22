@@ -1,0 +1,23 @@
+@startuml Sequence_Provider_GET_ALL
+
+header Car Rental Sequence Diagram
+footer Page %page% of %lastpage%
+title "Get All Car Providers (GET /api/v1/car-providers)"
+
+participant "Client" as client
+participant "<<javaScript>>\n:server" as server
+participant "<<router>>\n:carProviders" as routerCarProviders
+participant "<<controllers>>\n:carProviders" as controllersCarProviders
+participant "<<model>>\n:CarProvider" as modelCarProvider
+database "<<MongoDB>>\n:carproviders" as CarProvidersDatabase
+
+client->server ++:req.get('/api/v1/car-providers')
+server->routerCarProviders ++:app.use('/api/v1/car-providers',carProviders)
+routerCarProviders -> controllersCarProviders ++:getCarProviders()
+controllersCarProviders->modelCarProvider ++:find(query).populate("bookings")
+modelCarProvider ->CarProvidersDatabase ++: CarProviderSchema
+CarProvidersDatabase -->modelCarProvider --: carProviders[]
+controllersCarProviders <- modelCarProvider --:carProviders[]
+controllersCarProviders->client --:response
+
+@enduml
