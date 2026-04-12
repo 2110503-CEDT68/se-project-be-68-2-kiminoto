@@ -191,3 +191,42 @@ exports.deleteCarProvider = async (req, res, next) => {
         res.status(400).json({ success: false, error: err.message });
     }
 };
+
+//@desc Get car provider's reviews
+//@route GET /api/v1/car-providers/:id/reviews
+//@access Public
+exports.getCarProviderReviews = async (req,res,next) => {
+    try {
+        const carProvider = await CarProvider.findById(req.params.id).populate({
+            path: "bookings",populate: {
+              path: "user",
+              model: "User",
+              select: "name"
+            },
+            select: "status review"
+        }).lean();
+
+        if (!carProvider) {
+            return res.status(404).json({
+                success: false,
+                message: `No car provider with the id of ${req.params.id}`,
+            });
+        }
+
+        console.debug(carProvider);
+
+        // TODO: Get name of the reviewers, not just user id.
+        const fullReviews = carProvider.bookings.map((booking)=> ({
+          ...booking,
+          review: booking.review || {}
+        }));
+
+        res.status(200).json({ success:true, data:fullReviews});
+
+    } catch (err){
+        console.error(err);
+        return res
+            .status(500)
+            .json({ success: false, message: "Cannot get reviews" });
+    }
+}
