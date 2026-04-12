@@ -213,8 +213,6 @@ exports.getCarProviderReviews = async (req,res,next) => {
             });
         }
 
-        console.debug(carProvider);
-
         const fullReviews = carProvider.bookings.map((booking)=> ({
           ...booking,
           review: booking.review || {}
