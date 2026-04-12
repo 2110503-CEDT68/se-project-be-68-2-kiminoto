@@ -215,7 +215,6 @@ exports.getCarProviderReviews = async (req,res,next) => {
 
         console.debug(carProvider);
 
-        // TODO: Get name of the reviewers, not just user id.
         const fullReviews = carProvider.bookings.map((booking)=> ({
           ...booking,
           review: booking.review || {}
