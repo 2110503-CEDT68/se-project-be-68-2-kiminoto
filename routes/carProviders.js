@@ -4,6 +4,7 @@ const router = express.Router();
 const { protect, authorize } = require("../middleware/auth");
 
 const {
+    getCarProviderReviews,
     getCarProviders,
     getCarProvider,
     createCarProvider,
@@ -24,5 +25,9 @@ router
     .get(getCarProvider)
     .put(protect, authorize("admin"), updateCarProvider)
     .delete(protect, authorize("admin"), deleteCarProvider);
+
+router
+    .route("/:id/reviews")
+    .get(getCarProviderReviews);
 
 module.exports = router;
