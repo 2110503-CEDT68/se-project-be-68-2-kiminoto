@@ -17,17 +17,18 @@ const bookingRouter = require("./bookings");
 router.use("/:carProviderId/bookings/", bookingRouter);
 
 router
-    .route("/")
-    .get(getCarProviders)
-    .post(protect, authorize("admin"), createCarProvider);
+    .route("/:id/reviews")
+    .get(getCarProviderReviews);
+
 router
     .route("/:id")
     .get(getCarProvider)
     .put(protect, authorize("admin"), updateCarProvider)
     .delete(protect, authorize("admin"), deleteCarProvider);
-
+    
 router
-    .route("/:id/reviews")
-    .get(getCarProviderReviews);
+    .route("/")
+    .get(getCarProviders)
+    .post(protect, authorize("admin"), createCarProvider);
 
 module.exports = router;
