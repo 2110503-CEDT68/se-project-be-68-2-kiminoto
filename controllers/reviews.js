@@ -35,6 +35,8 @@ async function moderateContent(text) {
 
     const data = await result.json();
 
+    console.log("!!!!!", data);
+
     return {
         text: data.choices[0].message.content.split("|")[0],
         reason: data.choices[0].message.content.split("|")[1] || "",
@@ -75,7 +77,7 @@ exports.addReview = async (req, res, next) => {
         }
 
         // One review per booking
-        if (booking.review.rating != null) {
+        if (booking.review && booking.review.rating != null) {
             return res.status(400).json({
                 success: false,
                 message: "A review already exists for this booking",
@@ -92,7 +94,15 @@ exports.addReview = async (req, res, next) => {
         }
 
         // LLM moderation
-        const moderationResult = await moderateContent(comment);
+        let moderationResult;
+        try {
+            moderationResult = await moderateContent(comment);
+        } catch (err) {
+            console.error("Error during content moderation:", err);
+            return res
+                .status(500)
+                .json({ success: false, message: "Error during content moderation" });
+        }
         if (moderationResult.text === "REJECTED") {
             return res.status(400).json({
                 success: false,
@@ -146,7 +156,7 @@ exports.updateReview = async (req, res, next) => {
         }
 
         // Review must exist first
-        if (booking.review.rating == null) {
+        if (!booking.review || booking.review.rating == null) {
             return res.status(404).json({
                 success: false,
                 message: "No review found for this booking",

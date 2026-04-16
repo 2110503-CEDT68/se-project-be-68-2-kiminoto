@@ -156,7 +156,7 @@ exports.updateBooking = async (req, res, next) => {
         req.body.review = undefined;
 
         booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
+            returnDocument: "after",
             runValidators: true,
         });
 
