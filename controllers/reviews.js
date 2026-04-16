@@ -42,7 +42,7 @@ async function moderateContent(text) {
 }
 
 // @desc   Submit a review for a completed booking
-// @route  POST /api/v1/bookings/:bookingId/review
+// @route  POST /api/v1/bookings/:bookingId/reviews
 // @access Private
 exports.addReview = async (req, res, next) => {
     try {
@@ -121,7 +121,7 @@ exports.addReview = async (req, res, next) => {
 };
 
 // @desc   Update a review on a booking
-// @route  PUT /api/v1/bookings/:bookingId/review
+// @route  PUT /api/v1/bookings/:bookingId/reviews
 // @access Private
 exports.updateReview = async (req, res, next) => {
     try {
@@ -187,7 +187,7 @@ exports.updateReview = async (req, res, next) => {
 };
 
 // @desc   Delete a review on a booking
-// @route  DELETE /api/v1/bookings/:bookingId/review
+// @route  DELETE /api/v1/bookings/:bookingId/reviews
 // @access Private
 exports.deleteReview = async (req, res, next) => {
     try {

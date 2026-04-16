@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const ReviewSchema = require("./Review");
 
 const BookingSchema = new mongoose.Schema({
     bookDate: {
@@ -20,22 +21,7 @@ const BookingSchema = new mongoose.Schema({
         enum: ["active", "completed"],
         default: "active",
     },
-    review: {
-        rating: {
-            type: Number,
-            min: 1,
-            max: 5,
-        },
-        comment: {
-            type: String,
-        },
-        createdAt: {
-            type: Date,
-        },
-        updatedAt: {
-            type: Date,
-        },
-    },
+    review: ReviewSchema,
     createdAt: {
         type: Date,
         default: Date.now,
