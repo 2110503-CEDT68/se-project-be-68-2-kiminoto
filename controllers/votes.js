@@ -293,3 +293,67 @@ exports.getUpvoteCount = async (req, res, next) => {
         });
     }
 };
+
+// @desc   Get vote summary of a booking review
+// @route  GET /api/v1/bookings/:bookingId/votes
+// @access Public หรือ Private ก็ได้
+exports.getVoteSummary = async (req, res, next) => {
+    try {
+        const { bookingId } = req.params;
+        const userId = req.user ? req.user.id : null;
+
+        const booking = await Booking.findById(bookingId);
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: `No booking with the id of ${bookingId}`,
+            });
+        }
+
+        if (!booking.review || booking.review.rating == null) {
+            return res.status(404).json({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        }
+
+        const upvoteCount = await Vote.countDocuments({
+            booking: bookingId,
+            voteType: "upvote",
+        });
+
+        const downvoteCount = await Vote.countDocuments({
+            booking: bookingId,
+            voteType: "downvote",
+        });
+
+        let userVote = null;
+
+        if (userId) {
+            const vote = await Vote.findOne({
+                user: userId,
+                booking: bookingId,
+            });
+
+            if (vote) {
+                userVote = vote.voteType;
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                bookingId,
+                upvoteCount,
+                downvoteCount,
+                userVote, // "upvote", "downvote", หรือ null
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching vote summary",
+        });
+    }
+};

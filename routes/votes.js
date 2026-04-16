@@ -11,6 +11,8 @@ const { protect } = require("../middleware/auth");
 
 const router = express.Router({ mergeParams: true });
 
+router.get("/", getVoteSummary);
+
 router.post("/downvote", protect, addDownvote);
 router.delete("/downvote", protect, removeDownvote);
 router.get("/downvote", getDownvoteCount);
