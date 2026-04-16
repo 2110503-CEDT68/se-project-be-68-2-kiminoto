@@ -12,8 +12,10 @@ const { protect, authorize } = require("../middleware/auth");
 const router = express.Router({ mergeParams: true });
 
 const reviews = require("./reviews");
+const votes = require("./votes");
 
 router.use("/:bookingId/reviews", reviews);
+router.use("/:bookingId/votes", votes);
 
 router
     .route("/")
