@@ -56,7 +56,10 @@ app.use(xss());
 app.use(hpp());
 
 //Enable CORS
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+}));
 
 //Rate limiting
 const limiter = rateLimit({

@@ -9,7 +9,6 @@ exports.addDownvote = async (req, res, next) => {
         const { bookingId } = req.params;
         const userId = req.user.id;
 
-        // Check if booking exists and has a review
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
@@ -25,10 +24,9 @@ exports.addDownvote = async (req, res, next) => {
             });
         }
 
-        // Check if user already downvoted this review
         const existingVote = await Vote.findOne({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "downvote",
         });
 
@@ -39,17 +37,15 @@ exports.addDownvote = async (req, res, next) => {
             });
         }
 
-        // Remove upvote if exists (user can't both upvote and downvote)
         await Vote.deleteOne({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "upvote",
         });
 
-        // Create downvote
         const downvote = await Vote.create({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "downvote",
         });
 
@@ -66,15 +62,11 @@ exports.addDownvote = async (req, res, next) => {
     }
 };
 
-// @desc   Remove a downvote from a review
-// @route  DELETE /api/v1/bookings/:bookingId/votes/downvote
-// @access Private
 exports.removeDownvote = async (req, res, next) => {
     try {
         const { bookingId } = req.params;
         const userId = req.user.id;
 
-        // Check if booking exists and has a review
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
@@ -90,10 +82,9 @@ exports.removeDownvote = async (req, res, next) => {
             });
         }
 
-        // Find and delete downvote
         const vote = await Vote.findOneAndDelete({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "downvote",
         });
 
@@ -118,14 +109,10 @@ exports.removeDownvote = async (req, res, next) => {
     }
 };
 
-// @desc   Get total downvote count for a review
-// @route  GET /api/v1/bookings/:bookingId/votes/downvote
-// @access Public
 exports.getDownvoteCount = async (req, res, next) => {
     try {
         const { bookingId } = req.params;
 
-        // Check if booking exists and has a review
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
@@ -141,9 +128,8 @@ exports.getDownvoteCount = async (req, res, next) => {
             });
         }
 
-        // Count downvotes
         const downvoteCount = await Vote.countDocuments({
-            review: bookingId,
+            booking: bookingId,
             voteType: "downvote",
         });
 
@@ -163,15 +149,11 @@ exports.getDownvoteCount = async (req, res, next) => {
     }
 };
 
-// @desc   Add an upvote to a review
-// @route  POST /api/v1/bookings/:bookingId/votes/upvote
-// @access Private
 exports.addUpvote = async (req, res, next) => {
     try {
         const { bookingId } = req.params;
         const userId = req.user.id;
 
-        // Check if booking exists and has a review
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
@@ -187,10 +169,9 @@ exports.addUpvote = async (req, res, next) => {
             });
         }
 
-        // Check if user already upvoted this review
         const existingVote = await Vote.findOne({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "upvote",
         });
 
@@ -201,17 +182,15 @@ exports.addUpvote = async (req, res, next) => {
             });
         }
 
-        // Remove downvote if exists (user can't both upvote and downvote)
         await Vote.deleteOne({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "downvote",
         });
 
-        // Create upvote
         const upvote = await Vote.create({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "upvote",
         });
 
@@ -228,15 +207,11 @@ exports.addUpvote = async (req, res, next) => {
     }
 };
 
-// @desc   Remove an upvote from a review
-// @route  DELETE /api/v1/bookings/:bookingId/votes/upvote
-// @access Private
 exports.removeUpvote = async (req, res, next) => {
     try {
         const { bookingId } = req.params;
         const userId = req.user.id;
 
-        // Check if booking exists and has a review
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
@@ -252,10 +227,9 @@ exports.removeUpvote = async (req, res, next) => {
             });
         }
 
-        // Find and delete upvote
         const vote = await Vote.findOneAndDelete({
             user: userId,
-            review: bookingId,
+            booking: bookingId,
             voteType: "upvote",
         });
 
@@ -280,14 +254,10 @@ exports.removeUpvote = async (req, res, next) => {
     }
 };
 
-// @desc   Get total upvote count for a review
-// @route  GET /api/v1/bookings/:bookingId/votes/upvote
-// @access Public
 exports.getUpvoteCount = async (req, res, next) => {
     try {
         const { bookingId } = req.params;
 
-        // Check if booking exists and has a review
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
@@ -303,9 +273,8 @@ exports.getUpvoteCount = async (req, res, next) => {
             });
         }
 
-        // Count upvotes
         const upvoteCount = await Vote.countDocuments({
-            review: bookingId,
+            booking: bookingId,
             voteType: "upvote",
         });
 

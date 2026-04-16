@@ -1,28 +1,28 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const VoteSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.ObjectId,
-      ref: 'User',
-      required: true
+      ref: "User",
+      required: true,
     },
-    review: {
+    booking: {
       type: mongoose.Schema.ObjectId,
-      ref: 'Review',
-      required: true
+      ref: "Booking",
+      required: true,
     },
     voteType: {
       type: String,
-      enum: ['upvote', 'downvote'],
-      required: true
-    }
+      enum: ["upvote", "downvote"],
+      required: true,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
-VoteSchema.index({ user: 1, review: 1 }, { unique: true });
+VoteSchema.index({ user: 1, booking: 1 }, { unique: true });
 
-module.exports = mongoose.model('Vote', VoteSchema);
+module.exports = mongoose.model("Vote", VoteSchema);
