@@ -56,10 +56,7 @@ app.use(xss());
 app.use(hpp());
 
 //Enable CORS
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true,
-}));
+app.use();
 
 //Rate limiting
 const limiter = rateLimit({
@@ -88,6 +85,7 @@ const swaggerOptions = {
     apis: ["./routes/*.js"],
 };
 
+
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
@@ -97,6 +95,7 @@ app.use("/api/v1/auth", auth);
 app.use("/api/v1/bookings", bookings);
 
 module.exports = app;
+
 
 let server;
 if (process.env.VERCEL !== "1") {
@@ -111,6 +110,7 @@ if (process.env.VERCEL !== "1") {
         ),
     );
 }
+
 
 //Handle unhandled promise rejections
 process.on("unhandledRejection", (err, promise) => {
