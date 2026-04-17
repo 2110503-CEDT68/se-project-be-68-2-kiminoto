@@ -1,5 +1,6 @@
 const CarProvider = require("../models/CarProvider");
 const Booking = require("../models/Booking");
+const Vote = require("../models/Vote");
 
 //@desc Get all car providers
 //@route GET /api/v1/car-providers
@@ -195,15 +196,16 @@ exports.deleteCarProvider = async (req, res, next) => {
 //@desc Get car provider's reviews
 //@route GET /api/v1/car-providers/:id/reviews
 //@access Public
-exports.getCarProviderReviews = async (req,res,next) => {
+exports.getCarProviderReviews = async (req, res, next) => {
     try {
         const carProvider = await CarProvider.findById(req.params.id).populate({
-            path: "bookings",populate: {
-              path: "user",
-              model: "User",
-              select: "name"
+            path: "bookings",
+            populate: {
+                path: "user",
+                model: "User",
+                select: "name email",
             },
-            select: "status review"
+            select: "review",
         }).lean();
 
         if (!carProvider) {
@@ -213,14 +215,78 @@ exports.getCarProviderReviews = async (req,res,next) => {
             });
         }
 
-        const fullReviews = carProvider.bookings.map((booking)=> ({
-          ...booking,
-          review: booking.review || {}
-        }));
+        const bookingIds = carProvider.bookings
+            .filter((booking) => booking.review && booking.review.rating != null)
+            .map((booking) => booking._id);
 
-        res.status(200).json({ success:true, data:fullReviews});
+        const userVoteMap = new Map();
+        const voteSummaryMap = new Map();
 
-    } catch (err){
+        if (bookingIds.length > 0) {
+            const voteSummaries = await Vote.aggregate([
+                {
+                    $match: {
+                        booking: { $in: bookingIds },
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$booking",
+                        upvoteCount: {
+                            $sum: {
+                                $cond: [{ $eq: ["$voteType", "upvote"] }, 1, 0],
+                            },
+                        },
+                        downvoteCount: {
+                            $sum: {
+                                $cond: [{ $eq: ["$voteType", "downvote"] }, 1, 0],
+                            },
+                        },
+                    },
+                },
+            ]);
+
+            voteSummaries.forEach((summary) => {
+                voteSummaryMap.set(summary._id.toString(), {
+                    upvoteCount: summary.upvoteCount,
+                    downvoteCount: summary.downvoteCount,
+                });
+            });
+        }
+
+        if (req.user && bookingIds.length > 0) {
+            const userVotes = await Vote.find({
+                user: req.user.id,
+                booking: { $in: bookingIds },
+            })
+                .select("booking voteType")
+                .lean();
+
+            userVotes.forEach((vote) => {
+                userVoteMap.set(vote.booking.toString(), vote.voteType);
+            });
+        }
+
+        const fullReviews = carProvider.bookings.map((booking) => {
+            const userVote = userVoteMap.get(booking._id.toString()) || null;
+            const voteSummary = voteSummaryMap.get(booking._id.toString()) || {
+                upvoteCount: 0,
+                downvoteCount: 0,
+            };
+
+            return {
+                ...booking,
+                voteSummary: {
+                    ...voteSummary,
+                    userVote,
+                },
+            };
+        })
+        .filter((booking) => booking.review && booking.review.rating != null);
+
+        res.status(200).json({ success: true, data: fullReviews });
+
+    } catch (err) {
         console.error(err);
         return res
             .status(500)

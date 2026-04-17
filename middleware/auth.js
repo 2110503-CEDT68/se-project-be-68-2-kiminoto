@@ -36,6 +36,31 @@ exports.protect = async (req, res, next) => {
     }
 };
 
+// Optional auth for public endpoints that need user context when available.
+exports.optionalProtect = async (req, res, next) => {
+    let token;
+
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith("Bearer")
+    ) {
+        token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token || token === "null") {
+        return next();
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = await User.findById(decoded.id);
+    } catch (err) {
+        next();
+    }
+
+    next();
+};
+
 exports.authorize = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {

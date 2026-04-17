@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { protect, authorize } = require("../middleware/auth");
+const { protect, authorize, optionalProtect } = require("../middleware/auth");
 
 const {
     getCarProviderReviews,
@@ -18,7 +18,7 @@ router.use("/:carProviderId/bookings/", bookingRouter);
 
 router
     .route("/:id/reviews")
-    .get(getCarProviderReviews);
+    .get(optionalProtect, getCarProviderReviews);
 
 router
     .route("/:id")
