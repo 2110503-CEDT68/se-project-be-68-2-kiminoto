@@ -6,6 +6,7 @@ const {
     addUpvote,
     removeUpvote,
     getUpvoteCount,
+    getVoteSummary
 } = require("../controllers/votes");
 const { protect } = require("../middleware/auth");
 
