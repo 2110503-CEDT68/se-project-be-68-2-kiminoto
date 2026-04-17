@@ -19,9 +19,9 @@ const bookings = require("./routes/bookings");
 
 //Load env variables
 const envPath = path.join(__dirname, "config", "config.env");
-if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
-}
+// if (fs.existsSync(envPath)) {
+//     dotenv.config({ path: envPath });
+// }
 
 //Connect to database
 connectDB().catch((err) => {
@@ -56,7 +56,7 @@ app.use(xss());
 app.use(hpp());
 
 //Enable CORS
-app.use();
+app.use(cors());
 
 //Rate limiting
 const limiter = rateLimit({
