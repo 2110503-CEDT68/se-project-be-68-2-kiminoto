@@ -32,73 +32,58 @@ describe("Votes Full Coverage", () => {
         jest.clearAllMocks();
     });
 
-    describe("addUpvote - Error Paths", () => {
-        it("should throw on booking.findById error", async () => {
-            Booking.findById.mockRejectedValue(new Error("DB error"));
-
-            await addUpvote(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-        });
-
-        it("should delete downvote first when switching votes", async () => {
-            const mockBooking = {
-                _id: "b1",
-                review: { rating: 5 },
-            };
-
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.findOne.mockResolvedValue(null); // No existing upvote
-            Vote.deleteOne.mockResolvedValue({ deletedCount: 1 }); // Downvote deleted
-            Vote.create.mockResolvedValue({ voteType: "upvote" });
-
-            await addUpvote(mockReq, mockRes);
-
-            expect(Vote.deleteOne).toHaveBeenCalledWith({
-                user: "u1",
-                booking: "b1",
-                voteType: "downvote",
-            });
-            expect(Vote.create).toHaveBeenCalled();
-        });
-    });
-
-    describe("removeUpvote - Error Paths", () => {
-        it("should error when database fails on find", async () => {
-            const mockBooking = { review: { rating: 5 } };
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.findOneAndDelete.mockRejectedValue(new Error("DB error"));
-
-            await removeUpvote(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-        });
-    });
-
-    describe("addDownvote - Error Paths", () => {
-        it("should handle booking not found on downvote", async () => {
+    // =========================================
+    // addDownvote
+    // =========================================
+    describe("addDownvote", () => {
+        it("should return 404 when booking not found (line 14)", async () => {
             Booking.findById.mockResolvedValue(null);
 
             await addDownvote(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of b1",
+            });
         });
 
-        it("should handle review not found on downvote", async () => {
-            const mockBooking = { review: null };
-            Booking.findById.mockResolvedValue(mockBooking);
+        it("should return 404 when no review exists (line 21)", async () => {
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await addDownvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
+        it("should return 404 when review rating is null (line 21)", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: null } });
 
             await addDownvote(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(404);
         });
 
-        it("should replace upvote with downvote", async () => {
-            const mockBooking = { review: { rating: 5 } };
+        it("should return 500 on database error", async () => {
+            Booking.findById.mockRejectedValue(new Error("DB error"));
 
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.findOne.mockResolvedValue(null); // No existing downvote
-            Vote.deleteOne.mockResolvedValue({ deletedCount: 1 }); // Upvote deleted
+            await addDownvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(500);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error adding downvote",
+            });
+        });
+
+        it("should replace upvote with downvote", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.findOne.mockResolvedValue(null);
+            Vote.deleteOne.mockResolvedValue({ deletedCount: 1 });
             Vote.create.mockResolvedValue({ voteType: "downvote" });
 
             await addDownvote(mockReq, mockRes);
@@ -108,43 +93,59 @@ describe("Votes Full Coverage", () => {
                 booking: "b1",
                 voteType: "upvote",
             });
+            expect(mockRes.status).toHaveBeenCalledWith(201);
         });
 
-        it("should error on database creation failure", async () => {
-            const mockBooking = { review: { rating: 5 } };
-
-            Booking.findById.mockResolvedValue(mockBooking);
+        it("should return 500 on Vote.create failure", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
             Vote.findOne.mockResolvedValue(null);
-            Vote.deleteOne.mockResolvedValue({ deletedCount: 0 });
+            Vote.deleteOne.mockResolvedValue({});
             Vote.create.mockRejectedValue(new Error("Create failed"));
 
             await addDownvote(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error adding downvote",
+            });
         });
     });
 
-    describe("removeDownvote - Error Paths", () => {
-        it("should handle booking.findById error", async () => {
-            Booking.findById.mockRejectedValue(new Error("DB error"));
+    // =========================================
+    // removeDownvote — covers LINE 72
+    // =========================================
+    describe("removeDownvote", () => {
+        it("should return 404 when booking not found (line 72)", async () => {
+            Booking.findById.mockResolvedValue(null);
 
             await removeDownvote(mockReq, mockRes);
 
-            expect(mockRes.status).toHaveBeenCalledWith(500);
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of b1",
+            });
         });
 
-        it("should handle review not found", async () => {
-            const mockBooking = { review: { rating: null } };
-            Booking.findById.mockResolvedValue(mockBooking);
+        it("should return 404 when review has null rating", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: null } });
 
             await removeDownvote(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(404);
         });
 
-        it("should handle downvote not found to remove", async () => {
-            const mockBooking = { review: { rating: 5 } };
-            Booking.findById.mockResolvedValue(mockBooking);
+        it("should return 404 when no review exists", async () => {
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await removeDownvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+        });
+
+        it("should return 404 when downvote not found to remove", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
             Vote.findOneAndDelete.mockResolvedValue(null);
 
             await removeDownvote(mockReq, mockRes);
@@ -152,21 +153,96 @@ describe("Votes Full Coverage", () => {
             expect(mockRes.status).toHaveBeenCalledWith(404);
         });
 
-        it("should error on database delete failure", async () => {
-            const mockBooking = { review: { rating: 5 } };
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.findOneAndDelete.mockRejectedValue(new Error("Delete failed"));
+        it("should return 500 on database error", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.findOneAndDelete.mockRejectedValue(new Error("DB error"));
 
             await removeDownvote(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error removing downvote",
+            });
         });
     });
 
-    describe("getUpvoteCount - All Paths", () => {
-        it("should return upvote count", async () => {
-            const mockBooking = { review: { rating: 5 } };
-            Booking.findById.mockResolvedValue(mockBooking);
+    // =========================================
+    // removeUpvote — covers LINES 217, 224
+    // =========================================
+    describe("removeUpvote", () => {
+        it("should return 404 when booking not found (line 217)", async () => {
+            Booking.findById.mockResolvedValue(null);
+
+            await removeUpvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of b1",
+            });
+        });
+
+        it("should return 404 when no review exists (line 224)", async () => {
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await removeUpvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
+        it("should return 404 when review rating is null (line 224)", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: null } });
+
+            await removeUpvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+        });
+
+        it("should return 500 on database error", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.findOneAndDelete.mockRejectedValue(new Error("DB error"));
+
+            await removeUpvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(500);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error removing upvote",
+            });
+        });
+    });
+
+    // =========================================
+    // getUpvoteCount — covers LINE 263
+    // =========================================
+    describe("getUpvoteCount", () => {
+        it("should return 404 when booking not found (line 263)", async () => {
+            Booking.findById.mockResolvedValue(null);
+
+            await getUpvoteCount(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of b1",
+            });
+        });
+
+        it("should return 404 when no review exists", async () => {
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await getUpvoteCount(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+        });
+
+        it("should return upvote count successfully", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
             Vote.countDocuments.mockResolvedValue(7);
 
             await getUpvoteCount(mockReq, mockRes);
@@ -177,30 +253,54 @@ describe("Votes Full Coverage", () => {
             });
         });
 
-        it("should handle null review on count", async () => {
-            const mockBooking = { review: null };
-            Booking.findById.mockResolvedValue(mockBooking);
-
-            await getUpvoteCount(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(404);
-        });
-
-        it("should handle count database error", async () => {
-            const mockBooking = { review: { rating: 5 } };
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.countDocuments.mockRejectedValue(new Error("Count failed"));
+        it("should return 500 on database error", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.countDocuments.mockRejectedValue(new Error("DB error"));
 
             await getUpvoteCount(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error fetching upvote count",
+            });
         });
     });
 
-    describe("getDownvoteCount - All Paths", () => {
-        it("should return downvote count", async () => {
-            const mockBooking = { review: { rating: 5 } };
-            Booking.findById.mockResolvedValue(mockBooking);
+    // =========================================
+    // getDownvoteCount — covers LINE 125
+    // =========================================
+    describe("getDownvoteCount", () => {
+        it("should return 404 when booking not found", async () => {
+            Booking.findById.mockResolvedValue(null);
+
+            await getDownvoteCount(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+        });
+
+        it("should return 404 when no review exists (line 125)", async () => {
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await getDownvoteCount(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
+        it("should return 404 when review rating is null (line 125)", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: null } });
+
+            await getDownvoteCount(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+        });
+
+        it("should return downvote count successfully", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
             Vote.countDocuments.mockResolvedValue(3);
 
             await getDownvoteCount(mockReq, mockRes);
@@ -211,83 +311,8 @@ describe("Votes Full Coverage", () => {
             });
         });
 
-        it("should handle booking not found on count", async () => {
-            Booking.findById.mockResolvedValue(null);
-
-            await getDownvoteCount(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(404);
-        });
-
-        it("should handle count database error", async () => {
-            const mockBooking = { review: { rating: 5 } };
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.countDocuments.mockRejectedValue(new Error("Count failed"));
-
-            await getDownvoteCount(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-        });
-    });
-
-    describe("addDownvote - Specific Lines", () => {
-        it("should handle database error on create (line 72)", async () => {
-            const mockBooking = { review: { rating: 5 } };
-
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.findOne.mockResolvedValue(null);
-            Vote.deleteOne.mockResolvedValue({});
-            Vote.create.mockRejectedValue(new Error("DB error"));
-
-            await addDownvote(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.json).toHaveBeenCalledWith({
-                success: false,
-                message: "Error adding downvote"
-            });
-        });
-    });
-
-    describe("removeUpvote - Specific Lines", () => {
-        it("should handle database error on remove (line 125)", async () => {
-            const mockBooking = { review: { rating: 5 } };
-
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.findOneAndDelete.mockRejectedValue(new Error("DB error"));
-
-            await removeUpvote(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.json).toHaveBeenCalledWith({
-                success: false,
-                message: "Error removing upvote"
-            });
-        });
-    });
-
-    describe("removeDownvote - Specific Lines", () => {
-        it("should handle database error on remove (line 217)", async () => {
-            const mockBooking = { review: { rating: 5 } };
-
-            Booking.findById.mockResolvedValue(mockBooking);
-            Vote.findOneAndDelete.mockRejectedValue(new Error("DB error"));
-
-            await removeDownvote(mockReq, mockRes);
-
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.json).toHaveBeenCalledWith({
-                success: false,
-                message: "Error removing downvote"
-            });
-        });
-    });
-
-    describe("getDownvoteCount - Database Error", () => {
-        it("should handle count error (line 224)", async () => {
-            const mockBooking = { review: { rating: 5 } };
-
-            Booking.findById.mockResolvedValue(mockBooking);
+        it("should return 500 on database error", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
             Vote.countDocuments.mockRejectedValue(new Error("DB error"));
 
             await getDownvoteCount(mockReq, mockRes);
@@ -295,13 +320,16 @@ describe("Votes Full Coverage", () => {
             expect(mockRes.status).toHaveBeenCalledWith(500);
             expect(mockRes.json).toHaveBeenCalledWith({
                 success: false,
-                message: "Error fetching downvote count"
+                message: "Error fetching downvote count",
             });
         });
     });
 
-    describe("getVoteSummary - Database Error on Summary", () => {
-        it("should handle error in summary aggregation (line 263)", async () => {
+    // =========================================
+    // getVoteSummary
+    // =========================================
+    describe("getVoteSummary", () => {
+        it("should return 500 on database error", async () => {
             Booking.findById.mockRejectedValue(new Error("DB error"));
 
             await getVoteSummary(mockReq, mockRes);
@@ -309,8 +337,38 @@ describe("Votes Full Coverage", () => {
             expect(mockRes.status).toHaveBeenCalledWith(500);
             expect(mockRes.json).toHaveBeenCalledWith({
                 success: false,
-                message: "Error fetching vote summary"
+                message: "Error fetching vote summary",
             });
+        });
+    });
+
+    // =========================================
+    // addUpvote
+    // =========================================
+    describe("addUpvote", () => {
+        it("should return 500 on database error", async () => {
+            Booking.findById.mockRejectedValue(new Error("DB error"));
+
+            await addUpvote(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(500);
+        });
+
+        it("should delete downvote when switching to upvote", async () => {
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.findOne.mockResolvedValue(null);
+            Vote.deleteOne.mockResolvedValue({ deletedCount: 1 });
+            Vote.create.mockResolvedValue({ voteType: "upvote" });
+
+            await addUpvote(mockReq, mockRes);
+
+            expect(Vote.deleteOne).toHaveBeenCalledWith({
+                user: "u1",
+                booking: "b1",
+                voteType: "downvote",
+            });
+            expect(Vote.create).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(201);
         });
     });
 });

@@ -1,211 +1,214 @@
+/**
+ * User Model Tests
+ * Tests for User schema methods: pre-save hook, getSignedJwtToken, matchPassword
+ * These tests exercise the REAL User model code (lines 42-54 in User.js)
+ */
+
 jest.mock("bcryptjs");
 jest.mock("jsonwebtoken");
-jest.mock("mongoose");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
 
-// Create a mock User model to test the schema methods
-describe("User Model", () => {
-    let mockUser;
+// Import the REAL User model (do NOT mock mongoose)
+const User = require("../models/User");
 
+describe("User Model - Real Schema Methods", () => {
     beforeEach(() => {
         jest.clearAllMocks();
-
-        // Create a mock user instance
-        mockUser = {
-            _id: "userId123",
-            name: "John Doe",
-            email: "john@example.com",
-            password: "hashedPassword123",
-            tel: "1234567890",
-            role: "user",
-            createdAt: new Date(),
-        };
     });
 
+    // =========================================
+    // getSignedJwtToken — covers LINE 48
+    // =========================================
     describe("getSignedJwtToken", () => {
-        it("should generate JWT token with correct payload", async () => {
-            const mockToken = "jwt.token.here";
-            jwt.sign.mockReturnValue(mockToken);
+        it("should call jwt.sign with correct payload and options", () => {
+            process.env.JWT_SECRET = "test-secret";
+            process.env.JWT_EXPIRE = "30d";
+            jwt.sign.mockReturnValue("mock-jwt-token");
 
-            // Mock the method
-            mockUser.getSignedJwtToken = function() {
-                return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-                    expiresIn: process.env.JWT_EXPIRE,
-                });
-            };
+            const user = new User({
+                name: "Test User",
+                email: "test@example.com",
+                password: "password123",
+                tel: "1234567890",
+            });
 
-            const token = mockUser.getSignedJwtToken();
+            const token = user.getSignedJwtToken();
 
             expect(jwt.sign).toHaveBeenCalledWith(
-                { id: "userId123" },
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRE }
+                { id: user._id },
+                "test-secret",
+                { expiresIn: "30d" }
             );
-            expect(token).toBe(mockToken);
+            expect(token).toBe("mock-jwt-token");
         });
 
-        it("should use env variables for JWT secret and expiry", async () => {
-            process.env.JWT_SECRET = "test-secret";
-            process.env.JWT_EXPIRE = "7d";
+        it("should return the token from jwt.sign", () => {
+            jwt.sign.mockReturnValue("another-token");
 
-            jwt.sign.mockReturnValue("token");
+            const user = new User({
+                name: "Test",
+                email: "test2@example.com",
+                password: "pass123",
+                tel: "9876543210",
+            });
 
-            mockUser.getSignedJwtToken = function() {
-                return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-                    expiresIn: process.env.JWT_EXPIRE,
-                });
-            };
-
-            mockUser.getSignedJwtToken();
-
-            expect(jwt.sign).toHaveBeenCalledWith(
-                { id: "userId123" },
-                "test-secret",
-                { expiresIn: "7d" }
-            );
+            const result = user.getSignedJwtToken();
+            expect(result).toBe("another-token");
         });
     });
 
+    // =========================================
+    // matchPassword — covers LINE 54
+    // =========================================
     describe("matchPassword", () => {
         it("should return true when password matches", async () => {
             bcrypt.compare.mockResolvedValue(true);
 
-            mockUser.matchPassword = async function(password) {
-                return await bcrypt.compare(password, this.password);
-            };
+            const user = new User({
+                name: "Test User",
+                email: "test@example.com",
+                password: "hashedPassword123",
+                tel: "1234567890",
+            });
 
-            const result = await mockUser.matchPassword("testPassword");
+            const result = await user.matchPassword("plainPassword");
 
-            expect(bcrypt.compare).toHaveBeenCalledWith("testPassword", "hashedPassword123");
+            expect(bcrypt.compare).toHaveBeenCalledWith(
+                "plainPassword",
+                "hashedPassword123"
+            );
             expect(result).toBe(true);
         });
 
         it("should return false when password does not match", async () => {
             bcrypt.compare.mockResolvedValue(false);
 
-            mockUser.matchPassword = async function(password) {
-                return await bcrypt.compare(password, this.password);
-            };
+            const user = new User({
+                name: "Test User",
+                email: "test3@example.com",
+                password: "hashedPassword123",
+                tel: "1234567890",
+            });
 
-            const result = await mockUser.matchPassword("wrongPassword");
+            const result = await user.matchPassword("wrongPassword");
 
-            expect(bcrypt.compare).toHaveBeenCalledWith("wrongPassword", "hashedPassword123");
+            expect(bcrypt.compare).toHaveBeenCalledWith(
+                "wrongPassword",
+                "hashedPassword123"
+            );
             expect(result).toBe(false);
         });
 
-        it("should handle bcrypt errors", async () => {
+        it("should propagate bcrypt errors", async () => {
             bcrypt.compare.mockRejectedValue(new Error("Bcrypt error"));
 
-            mockUser.matchPassword = async function(password) {
-                return await bcrypt.compare(password, this.password);
-            };
+            const user = new User({
+                name: "Test User",
+                email: "test4@example.com",
+                password: "hashedPassword",
+                tel: "1234567890",
+            });
 
-            try {
-                await mockUser.matchPassword("testPassword");
-                expect(true).toBe(false); // Should throw
-            } catch (err) {
-                expect(err.message).toBe("Bcrypt error");
-            }
+            await expect(user.matchPassword("test")).rejects.toThrow(
+                "Bcrypt error"
+            );
         });
     });
 
-    describe("Password Hashing Pre-Save Hook", () => {
+    // =========================================
+    // pre-save hook — covers LINES 43-44
+    // Override $__save to run pre-save hooks without a real DB connection.
+    // =========================================
+    describe("pre-save hook (password hashing)", () => {
+        /**
+         * Helper: override $__save to execute pre/post hooks
+         * while skipping the actual DB insert/update operation.
+         */
+        function stubDbSave(user) {
+            user.$__save = async function (options) {
+                await this._execDocumentPreHooks("save", options, [options]);
+                await this._execDocumentPostHooks("save", options);
+            };
+        }
+
         it("should hash password before saving", async () => {
-            const hashedPassword = "hashed_newPassword123";
             bcrypt.genSalt.mockResolvedValue("salt123");
-            bcrypt.hash.mockResolvedValue(hashedPassword);
-
-            // Simulate the pre-save hook
-            const preSaveHook = async function(next) {
-                const salt = await bcrypt.genSalt(10);
-                this.password = await bcrypt.hash(this.password, salt);
-            };
-
-            const userBeforeSave = {
-                password: "plainPassword123",
-            };
-
-            await preSaveHook.call(userBeforeSave);
-
-            expect(bcrypt.genSalt).toHaveBeenCalledWith(10);
-            expect(bcrypt.hash).toHaveBeenCalledWith("plainPassword123", "salt123");
-            expect(userBeforeSave.password).toBe(hashedPassword);
-        });
-
-        it("should use bcrypt.genSalt with 10 rounds", async () => {
-            bcrypt.genSalt.mockResolvedValue("salt");
             bcrypt.hash.mockResolvedValue("hashedPassword");
 
-            const preSaveHook = async function(next) {
-                const salt = await bcrypt.genSalt(10);
-                this.password = await bcrypt.hash(this.password, salt);
-            };
+            const user = new User({
+                name: "Test User",
+                email: "test5@example.com",
+                password: "plaintext",
+                tel: "1234567890",
+            });
 
-            await preSaveHook.call({ password: "test" });
+            stubDbSave(user);
+            await user.save();
 
             expect(bcrypt.genSalt).toHaveBeenCalledWith(10);
+            expect(bcrypt.hash).toHaveBeenCalledWith("plaintext", "salt123");
+            expect(user.password).toBe("hashedPassword");
         });
 
-        it("should handle bcrypt salt generation errors", async () => {
+        it("should handle bcrypt.genSalt errors in pre-save", async () => {
             bcrypt.genSalt.mockRejectedValue(new Error("Salt error"));
 
-            const preSaveHook = async function(next) {
-                const salt = await bcrypt.genSalt(10);
-                this.password = await bcrypt.hash(this.password, salt);
-            };
+            const user = new User({
+                name: "Test User",
+                email: "test6@example.com",
+                password: "plaintext",
+                tel: "1234567890",
+            });
 
-            try {
-                await preSaveHook.call({ password: "test" });
-                expect(true).toBe(false); // Should throw
-            } catch (err) {
-                expect(err.message).toBe("Salt error");
-            }
+            stubDbSave(user);
+            await expect(user.save()).rejects.toThrow("Salt error");
         });
 
-        it("should handle bcrypt hash errors", async () => {
+        it("should handle bcrypt.hash errors in pre-save", async () => {
             bcrypt.genSalt.mockResolvedValue("salt");
             bcrypt.hash.mockRejectedValue(new Error("Hash error"));
 
-            const preSaveHook = async function(next) {
-                const salt = await bcrypt.genSalt(10);
-                this.password = await bcrypt.hash(this.password, salt);
-            };
+            const user = new User({
+                name: "Test User",
+                email: "test7@example.com",
+                password: "plaintext",
+                tel: "1234567890",
+            });
 
-            try {
-                await preSaveHook.call({ password: "test" });
-                expect(true).toBe(false); // Should throw
-            } catch (err) {
-                expect(err.message).toBe("Hash error");
-            }
+            stubDbSave(user);
+            await expect(user.save()).rejects.toThrow("Hash error");
         });
     });
 
-    describe("User Schema Validation", () => {
-        it("should have required fields", () => {
-            // Test required fields
-            expect(mockUser.name).toBeDefined();
-            expect(mockUser.email).toBeDefined();
-            expect(mockUser.password).toBeDefined();
-            expect(mockUser.tel).toBeDefined();
+    // =========================================
+    // Schema structure validation
+    // =========================================
+    describe("Schema structure", () => {
+        it("should have required fields defined in schema", () => {
+            const schemaPaths = User.schema.paths;
+            expect(schemaPaths.name).toBeDefined();
+            expect(schemaPaths.email).toBeDefined();
+            expect(schemaPaths.password).toBeDefined();
+            expect(schemaPaths.tel).toBeDefined();
+            expect(schemaPaths.role).toBeDefined();
+            expect(schemaPaths.createdAt).toBeDefined();
         });
 
-        it("should have role with default value", () => {
-            expect(mockUser.role).toBe("user");
+        it("should have role with default 'user'", () => {
+            const user = new User({
+                name: "Test",
+                email: "test8@example.com",
+                password: "pass",
+                tel: "123",
+            });
+            expect(user.role).toBe("user");
         });
 
-        it("should validate email format with regex", () => {
-            const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-
-            expect(emailRegex.test("john@example.com")).toBe(true);
-            expect(emailRegex.test("invalid-email")).toBe(false);
-            expect(emailRegex.test("user+tag@domain.co.uk")).toBe(true);
-        });
-
-        it("should have createdAt with default Date.now", () => {
-            expect(mockUser.createdAt).toBeInstanceOf(Date);
+        it("should have password with select: false", () => {
+            const passwordPath = User.schema.paths.password;
+            expect(passwordPath.options.select).toBe(false);
         });
     });
 });

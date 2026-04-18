@@ -15,7 +15,7 @@ const {
     getCarProviderReviews,
 } = require("../controllers/carProviders");
 
-describe("CarProviders - Comprehensive Coverage", () => {
+describe("CarProviders - Comprehensive Edge Cases", () => {
     let mockReq, mockRes;
 
     beforeEach(() => {
@@ -25,74 +25,85 @@ describe("CarProviders - Comprehensive Coverage", () => {
 
     afterEach(() => jest.clearAllMocks());
 
-    it("getCarProviders with all features", async () => {
+    // Helper to create a chainable query mock
+    function createFindChain(resolvedValue) {
+        return {
+            populate: jest.fn().mockReturnThis(),
+            select: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockResolvedValue(resolvedValue),
+        };
+    }
+
+    it("getCarProviders with all query features: select, sort, page, limit, filter", async () => {
         mockReq.query = {
             select: "name,location",
             sort: "name,-createdAt",
             page: "2",
             limit: "5",
             location: "Bangkok",
-            rating: { $gte: "4" }
         };
 
-        const mockQuery = {
-            select: jest.fn().mockReturnThis(),
-            sort: jest.fn().mockReturnThis(),
-            skip: jest.fn().mockReturnThis(),
-            limit: jest.fn().mockResolvedValue([
-                {
-                    _id: "p1",
-                    name: "Provider 1",
-                    bookings: [
-                        { review: { rating: 5 } },
-                        { review: { rating: 4 } },
-                        { review: { rating: 3 } }
-                    ],
-                    toObject: jest.fn(function() {
-                        return {...this};
-                    })
-                }
-            ])
-        };
+        const providers = [
+            {
+                _id: "p1",
+                name: "Provider 1",
+                bookings: [
+                    { review: { rating: 5 } },
+                    { review: { rating: 4 } },
+                    { review: { rating: 3 } },
+                ],
+                toObject: jest.fn(function () {
+                    return { _id: this._id, bookings: this.bookings };
+                }),
+            },
+        ];
 
-        CarProvider.find.mockReturnValue(mockQuery);
+        const chain = createFindChain(providers);
+        CarProvider.find.mockReturnValue(chain);
         CarProvider.countDocuments.mockResolvedValue(15);
 
         await getCarProviders(mockReq, mockRes);
 
         expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(chain.select).toHaveBeenCalledWith("name location");
+        expect(chain.sort).toHaveBeenCalledWith("name -createdAt");
         const response = mockRes.json.mock.calls[0][0];
         expect(response.success).toBe(true);
         expect(response.pagination.next).toBeDefined();
+        expect(response.pagination.prev).toBeDefined();
         expect(response.data[0].avgRating).toBe(4);
     });
 
-    it("getCarProviders handles empty results", async () => {
-        const mockQuery = {
-            select: jest.fn().mockReturnThis(),
-            sort: jest.fn().mockReturnThis(),
-            skip: jest.fn().mockReturnThis(),
-            limit: jest.fn().mockResolvedValue([])
+    it("getCarProvider returns single provider with computed avgRating", async () => {
+        mockReq.params.id = "p1";
+        const mockProvider = {
+            _id: "p1",
+            bookings: [
+                { review: { rating: 5 } },
+                { review: { rating: 3 } },
+                { review: null },
+            ],
+            toObject: jest.fn(function () {
+                return { _id: this._id, bookings: this.bookings };
+            }),
         };
+        CarProvider.findById.mockReturnValue({
+            populate: jest.fn().mockResolvedValue(mockProvider),
+        });
 
-        CarProvider.find.mockReturnValue(mockQuery);
-        CarProvider.countDocuments.mockResolvedValue(0);
+        await getCarProvider(mockReq, mockRes);
 
-        await getCarProviders(mockReq, mockRes);
-
-        expect(mockRes.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-                success: true,
-                count: 0,
-                data: []
-            })
-        );
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        const response = mockRes.json.mock.calls[0][0];
+        expect(response.data.avgRating).toBe(4);
     });
 
-    it("getCarProvider returns null for missing provider", async () => {
+    it("getCarProvider returns 404 for missing provider", async () => {
         mockReq.params.id = "nonexistent";
         CarProvider.findById.mockReturnValue({
-            populate: jest.fn().mockResolvedValue(null)
+            populate: jest.fn().mockResolvedValue(null),
         });
 
         await getCarProvider(mockReq, mockRes);
@@ -109,19 +120,14 @@ describe("CarProviders - Comprehensive Coverage", () => {
         expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it("updateCarProvider calls correct method", async () => {
-        mockReq.params.id = "p1";
+    it("updateCarProvider returns 404 for missing provider", async () => {
+        mockReq.params.id = "nonexistent";
         mockReq.body = { name: "Updated" };
-        CarProvider.findByIdAndUpdate.mockResolvedValue({ _id: "p1", name: "Updated" });
+        CarProvider.findByIdAndUpdate.mockResolvedValue(null);
 
         await updateCarProvider(mockReq, mockRes);
 
-        expect(CarProvider.findByIdAndUpdate).toHaveBeenCalledWith(
-            "p1",
-            mockReq.body,
-            { returnDocument: "after", runValidators: true }
-        );
-        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.status).toHaveBeenCalledWith(404);
     });
 
     it("deleteCarProvider removes provider and bookings", async () => {
@@ -136,7 +142,7 @@ describe("CarProviders - Comprehensive Coverage", () => {
         expect(mockRes.status).toHaveBeenCalledWith(200);
     });
 
-    it("getCarProviderReviews with complex voting", async () => {
+    it("getCarProviderReviews with user votes and vote summaries", async () => {
         mockReq.params.id = "p1";
         mockReq.user = { id: "u1" };
 
@@ -146,21 +152,24 @@ describe("CarProviders - Comprehensive Coverage", () => {
                     bookings: [
                         { _id: "b1", review: { rating: 5 }, user: { name: "U1" } },
                         { _id: "b2", review: { rating: 4 }, user: { name: "U2" } },
-                        { _id: "b3", review: null }
-                    ]
-                })
-            })
+                        { _id: "b3", review: null },
+                    ],
+                }),
+            }),
         });
 
         Vote.aggregate.mockResolvedValue([
             { _id: "b1", upvoteCount: 10, downvoteCount: 2 },
-            { _id: "b2", upvoteCount: 5, downvoteCount: 1 }
+            { _id: "b2", upvoteCount: 5, downvoteCount: 1 },
         ]);
 
-        Vote.find.mockResolvedValue([
-            { booking: "b1", voteType: "upvote" },
-            { booking: "b2", voteType: null }
-        ]);
+        Vote.find.mockReturnValue({
+            select: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([
+                    { booking: { toString: () => "b1" }, voteType: "upvote" },
+                ]),
+            }),
+        });
 
         await getCarProviderReviews(mockReq, mockRes);
 
