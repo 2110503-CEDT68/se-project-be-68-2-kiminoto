@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>8/12</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>8/12</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -120,13 +120,11 @@
 <a name='L55'></a><a href='#L55'>55</a>
 <a name='L56'></a><a href='#L56'>56</a>
 <a name='L57'></a><a href='#L57'>57</a>
-<a name='L58'></a><a href='#L58'>58</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L58'></a><a href='#L58'>58</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -161,27 +159,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const mongoose = <span class="cstat-no" title="statement not covered" >require("mongoose");</span>
-const bcrypt = <span class="cstat-no" title="statement not covered" >require("bcryptjs");</span>
-const jwt = <span class="cstat-no" title="statement not covered" >require("jsonwebtoken");</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 &nbsp;
-const userSchema = <span class="cstat-no" title="statement not covered" >new mongoose.Schema({</span>
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, "Please add a name"],
@@ -218,22 +218,22 @@ const userSchema = <span class="cstat-no" title="statement not covered" >new mon
     },
 });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >userSchema.pre("save", <span class="fstat-no" title="function not covered" >as</span>ync function (next) {</span>
+userSchema.pre("save", <span class="fstat-no" title="function not covered" >as</span>ync function (next) {
     const salt = <span class="cstat-no" title="statement not covered" >await bcrypt.genSalt(10);</span>
 <span class="cstat-no" title="statement not covered" >    this.password = await bcrypt.hash(this.password, salt);</span>
 });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >userSchema.methods.getSignedJwtToken = <span class="fstat-no" title="function not covered" >fu</span>nction () {</span>
+userSchema.methods.getSignedJwtToken = <span class="fstat-no" title="function not covered" >fu</span>nction () {
 <span class="cstat-no" title="statement not covered" >    return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {</span>
         expiresIn: process.env.JWT_EXPIRE,
     });
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >userSchema.methods.matchPassword = <span class="fstat-no" title="function not covered" >as</span>ync function (password) {</span>
+userSchema.methods.matchPassword = <span class="fstat-no" title="function not covered" >as</span>ync function (password) {
 <span class="cstat-no" title="statement not covered" >    return await bcrypt.compare(password, this.password);</span>
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = mongoose.model("User", userSchema);</span>
+module.exports = mongoose.model("User", userSchema);
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -241,7 +241,7 @@ const userSchema = <span class="cstat-no" title="statement not covered" >new mon
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-18T06:01:04.784Z
+                at 2026-04-18T06:22:25.023Z
             </div>
         <script src="../prettify.js"></script>
         <script>
