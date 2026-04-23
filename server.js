@@ -94,9 +94,9 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use("/api/v1/car-providers", carProviders);
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/bookings", bookings);
+app.use("/api/v1/profile", profile);
 
 module.exports = app;
-
 
 let server;
 if (process.env.VERCEL !== "1") {
