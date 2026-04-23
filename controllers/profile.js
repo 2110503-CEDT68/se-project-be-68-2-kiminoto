@@ -1,5 +1,5 @@
 //@desc Edit a custom profile field (or create that field if doesn't exist).
-//@route PATCH /api/v1/profile
+//@route PATCH /api/v1/profile/fields
 //@access Private
 exports.editProfileField = async (req, res, next) => {
     try {
