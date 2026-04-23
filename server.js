@@ -86,7 +86,6 @@ const swaggerOptions = {
     apis: ["./routes/*.js"],
 };
 
-
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
@@ -111,7 +110,6 @@ if (process.env.VERCEL !== "1") {
         ),
     );
 }
-
 
 //Handle unhandled promise rejections
 process.on("unhandledRejection", (err, promise) => {
