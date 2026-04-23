@@ -18,6 +18,9 @@ exports.editProfileField = async (req, res, next) => {
         }
 
         await req.user.save();
+
+        // TODO: Figure out what to return instead.
+        res.status(200).json({ success: true, data: req.user });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
     }
