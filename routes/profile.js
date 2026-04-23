@@ -4,9 +4,18 @@ const router = express.Router();
 const { protect, authorize } = require("../middleware/auth");
 
 const {
+    uploadAvatar,
+    getAvatar,
+    deleteAvatar,
     editProfileField,
     deleteProfileField,
 } = require("../controllers/profile");
+
+router
+    .route("/avatar")
+    .put(protect, authorize("admin", "user"), uploadAvatar)
+    .get(protect, authorize("admin", "user"), getAvatar)
+    .delete(protect, authorize("admin", "user"), deleteAvatar);
 
 router
     .route("/fields")

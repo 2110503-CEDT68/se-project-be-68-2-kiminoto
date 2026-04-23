@@ -54,11 +54,12 @@ const userSchema = new mongoose.Schema({
     },
     profile: {
         avatar: {
-            type: Buffer,
+            data: Buffer,
             contentType: String,
         },
         fields: {
             type: [customFieldSchema],
+            default: [],
         },
     },
 });
@@ -71,8 +72,12 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.pre("validate", function (next) {
+    const customFields = this.profile && this.profile.fields
+        ? this.profile.fields
+        : [];
+
     // TODO: Un-magic number this
-    if (this.profile.fields.length > 5) {
+    if (customFields.length > 5) {
         throw new Error("Custom fields length exceeds limit of 5.");
     }
 });
