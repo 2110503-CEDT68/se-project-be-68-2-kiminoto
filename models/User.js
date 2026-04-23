@@ -6,6 +6,8 @@ const customFieldSchema = new mongoose.Schema({
     key: {
         type: String,
         required: [true, "Please add a key"],
+        minLength: [1, "Key is blank."],
+        maxLength: [16, "Key is too long."],
     },
     value: {
         type: String,
