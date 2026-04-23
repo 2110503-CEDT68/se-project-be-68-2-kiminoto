@@ -1,7 +1,7 @@
 //@desc Edit a custom profile field (or create that field if doesn't exist).
 //@route PATCH /api/v1/profile
 //@access Private
-exports.addProfileField = async (req, res, next) => {
+exports.editProfileField = async (req, res, next) => {
     try {
         const { key, value } = req.body;
 
