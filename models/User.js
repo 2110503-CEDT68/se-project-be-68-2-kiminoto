@@ -37,9 +37,14 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
-    avatar: {
-        type: Buffer,
-        contentType: String,
+    profile: {
+        avatar: {
+            type: Buffer,
+            contentType: String,
+        },
+        fields: {
+            type: Object,
+        },
     },
 });
 
