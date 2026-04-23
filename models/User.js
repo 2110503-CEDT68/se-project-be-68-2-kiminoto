@@ -2,6 +2,21 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const customFieldSchema = new mongoose.Schema({
+    key: {
+        type: String,
+        required: [true, "Please add a key"],
+        minLength: [1, "Key is blank."],
+        maxLength: [16, "Key is too long."],
+    },
+    value: {
+        type: String,
+        required: [true, "Please add a value"],
+        minLength: [1, "Value is blank."],
+        maxLength: [32, "Value is too long."],
+    },
+});
+
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -37,11 +52,29 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    profile: {
+        avatar: {
+            type: Buffer,
+            contentType: String,
+        },
+        fields: {
+            type: [customFieldSchema],
+        },
+    },
 });
 
 userSchema.pre("save", async function (next) {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    if (this.isModified("password")) {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+    }
+});
+
+userSchema.pre("validate", function (next) {
+    // TODO: Un-magic number this
+    if (this.profile.fields.length > 5) {
+        throw new Error("Custom fields length exceeds limit of 5.");
+    }
 });
 
 userSchema.methods.getSignedJwtToken = function () {
