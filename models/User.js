@@ -54,7 +54,7 @@ const userSchema = new mongoose.Schema({
             contentType: String,
         },
         fields: {
-            type: Object,
+            type: [customFieldSchema],
         },
     },
 });
