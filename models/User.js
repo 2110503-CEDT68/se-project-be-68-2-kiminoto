@@ -69,9 +69,7 @@ userSchema.pre("save", async function (next) {
 userSchema.pre("validate", function (next) {
     // TODO: Un-magic number this
     if (this.profile.fields.length > 5) {
-        next(new Error("Custom fields length exceeds limit of 5."));
-    } else {
-        next();
+        throw new Error("Custom fields length exceeds limit of 5.");
     }
 });
 
