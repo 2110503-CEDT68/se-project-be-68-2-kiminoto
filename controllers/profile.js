@@ -10,7 +10,8 @@ exports.editProfileField = async (req, res, next) => {
         if (existingKeys.includes(key)) {
             // field does exist, so update it.
             const index = existingKeys.indexOf(key);
-            req.user.profile.fields[index] = value;
+            req.user.profile.fields[index].key = key;
+            req.user.profile.fields[index].value = value;
         } else {
             // field doesn't exist, so create it.
             req.user.profile.fields.push({ key: key, value: value });
