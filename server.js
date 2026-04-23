@@ -16,6 +16,7 @@ const swaggerUi = require("swagger-ui-express");
 const carProviders = require("./routes/carProviders");
 const auth = require("./routes/auth");
 const bookings = require("./routes/bookings");
+const profile = require("./routes/profile");
 
 //Load env variables
 const envPath = path.join(__dirname, "config", "config.env");
