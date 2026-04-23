@@ -26,6 +26,9 @@ exports.editProfileField = async (req, res, next) => {
     }
 };
 
+//@desc Edit a custom profile field (or create that field if doesn't exist).
+//@route DELETE /api/v1/profile/fields
+//@access Private
 exports.deleteProfileField = async (req, res, next) => {
     try {
         const { key } = req.body;
