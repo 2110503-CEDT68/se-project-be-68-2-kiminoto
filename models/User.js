@@ -12,6 +12,8 @@ const customFieldSchema = new mongoose.Schema({
     value: {
         type: String,
         required: [true, "Please add a value"],
+        minLength: [1, "Value is blank."],
+        maxLength: [32, "Value is too long."],
     },
 });
 
