@@ -69,6 +69,9 @@ app.use(limiter);
 //Cookie parser
 app.use(cookieParser());
 
+// increase avatar size limit
+app.use(express.json({ limit: "2mb" }));
+
 const swaggerOptions = {
     swaggerDefinition: {
         openapi: "3.0.0",
