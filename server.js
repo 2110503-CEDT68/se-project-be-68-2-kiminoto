@@ -34,7 +34,10 @@ const app = express();
 app.set("query parser", "extended");
 
 //Body parser
-app.use(express.json({ limit: "2mb" }));
+// limit is 2MB*4/3 which is 2.67MB, but i'm going to
+// be nice and round it up to a beautiful number
+// to be 2.75MB -mistertfy64 2026-04-26 00:01 UTC+7
+app.use(express.json({ limit: "2.75mb" }));
 
 //Mongo sanitize
 app.use(
