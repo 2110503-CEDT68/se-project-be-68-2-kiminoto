@@ -34,7 +34,7 @@ const app = express();
 app.set("query parser", "extended");
 
 //Body parser
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 
 //Mongo sanitize
 app.use(
@@ -68,9 +68,6 @@ app.use(limiter);
 
 //Cookie parser
 app.use(cookieParser());
-
-// increase avatar size limit
-app.use(express.json({ limit: "2mb" }));
 
 const swaggerOptions = {
     swaggerDefinition: {
