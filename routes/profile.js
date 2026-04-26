@@ -4,6 +4,7 @@ const router = express.Router();
 const { protect, authorize } = require("../middleware/auth");
 
 const {
+    getPublicProfile,
     uploadAvatar,
     getAvatar,
     getUserAvatar,
@@ -26,5 +27,9 @@ router
     .route("/fields")
     .patch(protect, authorize("admin", "user"), editProfileField)
     .delete(protect, authorize("admin", "user"), deleteProfileField);
+
+router
+    .route("/:id")
+    .get(getPublicProfile);
 
 module.exports = router;

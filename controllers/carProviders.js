@@ -209,7 +209,7 @@ exports.getCarProviderReviews = async (req, res, next) => {
                 populate: {
                     path: "user",
                     model: "User",
-                    select: "name email",
+                    select: "name email profile.fields",
                 },
                 select: "review",
             })

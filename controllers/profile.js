@@ -61,6 +61,32 @@ const sendAvatarResponse = (res, avatar, cacheControl) => {
     res.status(200).send(avatar.data);
 };
 
+//@desc Get another user's public profile
+//@route GET /api/v1/profile/:id
+//@access Public
+exports.getPublicProfile = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id).select(
+            "name email tel createdAt profile.fields",
+        );
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                error: "User not found.",
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user,
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+};
+
 //@desc Upload or replace user avatar image
 //@route PUT /api/v1/profile/avatar
 //@access Private
