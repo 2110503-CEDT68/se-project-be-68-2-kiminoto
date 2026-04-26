@@ -50,8 +50,13 @@ app.use(
     }),
 );
 
-//Helmet
-app.use(helmet());
+// Helmet's default CORP policy blocks cross-origin avatar images when the
+// frontend and backend are deployed on separate Vercel domains.
+app.use(
+    helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+);
 
 //Prevent XSS attacks
 app.use(xss());

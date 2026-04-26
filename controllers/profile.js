@@ -51,6 +51,16 @@ const parseAvatarPayload = (image, contentType) => {
     };
 };
 
+const sendAvatarResponse = (res, avatar, cacheControl) => {
+    res.set(
+        "Content-Type",
+        avatar.contentType || "application/octet-stream",
+    );
+    res.set("Cross-Origin-Resource-Policy", "cross-origin");
+    res.set("Cache-Control", cacheControl);
+    res.status(200).send(avatar.data);
+};
+
 //@desc Upload or replace user avatar image
 //@route PUT /api/v1/profile/avatar
 //@access Private
@@ -99,12 +109,7 @@ exports.getAvatar = async (req, res, next) => {
             return;
         }
 
-        res.set(
-            "Content-Type",
-            avatar.contentType || "application/octet-stream",
-        );
-
-        res.status(200).send(avatar.data);
+        sendAvatarResponse(res, avatar, "private, no-store");
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
     }
@@ -112,7 +117,7 @@ exports.getAvatar = async (req, res, next) => {
 
 //@desc Get another user's avatar image
 //@route GET /api/v1/profile/avatar/:id
-//@access Private
+//@access Public
 exports.getUserAvatar = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id).select(
@@ -129,12 +134,7 @@ exports.getUserAvatar = async (req, res, next) => {
             return;
         }
 
-        res.set(
-            "Content-Type",
-            avatar.contentType || "application/octet-stream",
-        );
-
-        res.status(200).send(avatar.data);
+        sendAvatarResponse(res, avatar, "public, max-age=300");
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
     }

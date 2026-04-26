@@ -20,7 +20,7 @@ router
 
 router
     .route("/avatar/:id")
-    .get(protect, authorize("admin", "user"), getUserAvatar);
+    .get(getUserAvatar);
 
 router
     .route("/fields")
