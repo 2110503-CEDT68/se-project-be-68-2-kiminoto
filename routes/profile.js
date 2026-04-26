@@ -6,6 +6,7 @@ const { protect, authorize } = require("../middleware/auth");
 const {
     uploadAvatar,
     getAvatar,
+    getUserAvatar,
     deleteAvatar,
     editProfileField,
     deleteProfileField,
@@ -16,6 +17,10 @@ router
     .put(protect, authorize("admin", "user"), uploadAvatar)
     .get(protect, authorize("admin", "user"), getAvatar)
     .delete(protect, authorize("admin", "user"), deleteAvatar);
+
+router
+    .route("/avatar/:id")
+    .get(protect, authorize("admin", "user"), getUserAvatar);
 
 router
     .route("/fields")

@@ -1,3 +1,5 @@
+const User = require("../models/User");
+
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_CONTENT_TYPES = new Set([
     "image/png",
@@ -60,13 +62,14 @@ exports.uploadAvatar = async (req, res, next) => {
             contentType,
         );
 
-        req.user.profile = req.user.profile || {};
-        req.user.profile.avatar = {
+        const user = await User.findById(req.user.id).select("profile.avatar");
+        user.profile = user.profile || {};
+        user.profile.avatar = {
             data: imageBuffer,
             contentType: parsedType,
         };
 
-        await req.user.save();
+        await user.save();
 
         res.status(200).json({
             success: true,
@@ -85,15 +88,52 @@ exports.uploadAvatar = async (req, res, next) => {
 //@access Private
 exports.getAvatar = async (req, res, next) => {
     try {
-        const avatar = req.user && req.user.profile && req.user.profile.avatar;
+        const user = await User.findById(req.user.id).select("profile.avatar");
+        const avatar = user && user.profile && user.profile.avatar;
 
         if (!avatar || !avatar.data) {
-            res.status(404).json({ success: false, error: "Avatar not found." });
+            res.status(404).json({
+                success: false,
+                error: "Avatar not found.",
+            });
             return;
         }
 
-        res.set("Content-Type", avatar.contentType || "application/octet-stream");
-        res.set("Cache-Control", "no-store");
+        res.set(
+            "Content-Type",
+            avatar.contentType || "application/octet-stream",
+        );
+
+        res.status(200).send(avatar.data);
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+};
+
+//@desc Get another user's avatar image
+//@route GET /api/v1/profile/avatar/:id
+//@access Private
+exports.getUserAvatar = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id).select(
+            "profile.avatar",
+        );
+
+        const avatar = user && user.profile && user.profile.avatar;
+
+        if (!user || !avatar || !avatar.data) {
+            res.status(404).json({
+                success: false,
+                error: "Avatar not found.",
+            });
+            return;
+        }
+
+        res.set(
+            "Content-Type",
+            avatar.contentType || "application/octet-stream",
+        );
+
         res.status(200).send(avatar.data);
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
@@ -105,15 +145,23 @@ exports.getAvatar = async (req, res, next) => {
 //@access Private
 exports.deleteAvatar = async (req, res, next) => {
     try {
-        const hasAvatar = req.user && req.user.profile && req.user.profile.avatar && req.user.profile.avatar.data;
+        const user = await User.findById(req.user.id).select("profile.avatar");
+        const hasAvatar =
+            user &&
+            user.profile &&
+            user.profile.avatar &&
+            user.profile.avatar.data;
 
         if (!hasAvatar) {
-            res.status(404).json({ success: false, error: "Avatar not found." });
+            res.status(404).json({
+                success: false,
+                error: "Avatar not found.",
+            });
             return;
         }
 
-        req.user.profile.avatar = {};
-        await req.user.save();
+        user.profile.avatar = {};
+        await user.save();
 
         res.status(200).json({
             success: true,

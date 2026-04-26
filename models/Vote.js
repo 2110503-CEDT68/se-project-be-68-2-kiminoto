@@ -23,4 +23,7 @@ const VoteSchema = new mongoose.Schema(
     },
 );
 
+VoteSchema.index({ user: 1, booking: 1 }, { unique: true });
+VoteSchema.index({ booking: 1 });
+
 module.exports = mongoose.model("Vote", VoteSchema);

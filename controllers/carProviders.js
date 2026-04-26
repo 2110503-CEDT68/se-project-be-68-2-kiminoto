@@ -25,7 +25,10 @@ exports.getCarProviders = async (req, res, next) => {
         );
 
         //Find resource
-        query = CarProvider.find(JSON.parse(queryStr)).populate("bookings");
+        query = CarProvider.find(JSON.parse(queryStr)).populate({
+            path: "bookings",
+            select: "review.rating",
+        });
 
         //Select fields
         if (req.query.select) {
@@ -96,9 +99,10 @@ exports.getCarProviders = async (req, res, next) => {
 //@access Public
 exports.getCarProvider = async (req, res, next) => {
     try {
-        const carProvider = await CarProvider.findById(req.params.id).populate(
-            "bookings",
-        );
+        const carProvider = await CarProvider.findById(req.params.id).populate({
+            path: "bookings",
+            select: "review.rating",
+        });
 
         if (!carProvider) {
             return res.status(404).json({
@@ -198,15 +202,18 @@ exports.deleteCarProvider = async (req, res, next) => {
 //@access Public
 exports.getCarProviderReviews = async (req, res, next) => {
     try {
-        const carProvider = await CarProvider.findById(req.params.id).populate({
-            path: "bookings",
-            populate: {
-                path: "user",
-                model: "User",
-                select: "name email",
-            },
-            select: "review",
-        }).lean();
+        const carProvider = await CarProvider.findById(req.params.id)
+            .populate({
+                path: "bookings",
+                match: { "review.rating": { $ne: null } },
+                populate: {
+                    path: "user",
+                    model: "User",
+                    select: "name email",
+                },
+                select: "review",
+            })
+            .lean();
 
         if (!carProvider) {
             return res.status(404).json({
@@ -216,7 +223,9 @@ exports.getCarProviderReviews = async (req, res, next) => {
         }
 
         const bookingIds = carProvider.bookings
-            .filter((booking) => booking.review && booking.review.rating != null)
+            .filter(
+                (booking) => booking.review && booking.review.rating != null,
+            )
             .map((booking) => booking._id);
 
         const userVoteMap = new Map();
@@ -239,7 +248,11 @@ exports.getCarProviderReviews = async (req, res, next) => {
                         },
                         downvoteCount: {
                             $sum: {
-                                $cond: [{ $eq: ["$voteType", "downvote"] }, 1, 0],
+                                $cond: [
+                                    { $eq: ["$voteType", "downvote"] },
+                                    1,
+                                    0,
+                                ],
                             },
                         },
                     },
@@ -267,29 +280,34 @@ exports.getCarProviderReviews = async (req, res, next) => {
             });
         }
 
-        const fullReviews = carProvider.bookings.map((booking) => {
-            const userVote = userVoteMap.get(booking._id.toString()) || null;
-            const voteSummary = voteSummaryMap.get(booking._id.toString()) || {
-                upvoteCount: 0,
-                downvoteCount: 0,
-            };
+        const fullReviews = carProvider.bookings
+            .map((booking) => {
+                const userVote =
+                    userVoteMap.get(booking._id.toString()) || null;
+                const voteSummary = voteSummaryMap.get(
+                    booking._id.toString(),
+                ) || {
+                    upvoteCount: 0,
+                    downvoteCount: 0,
+                };
 
-            return {
-                ...booking,
-                voteSummary: {
-                    ...voteSummary,
-                    userVote,
-                },
-            };
-        })
-        .filter((booking) => booking.review && booking.review.rating != null);
+                return {
+                    ...booking,
+                    voteSummary: {
+                        ...voteSummary,
+                        userVote,
+                    },
+                };
+            })
+            .filter(
+                (booking) => booking.review && booking.review.rating != null,
+            );
 
         res.status(200).json({ success: true, data: fullReviews });
-
     } catch (err) {
         console.error(err);
         return res
             .status(500)
             .json({ success: false, message: "Cannot get reviews" });
     }
-}
+};
