@@ -81,15 +81,26 @@ const swaggerOptions = {
     swaggerDefinition: {
         openapi: "3.0.0",
         info: {
-            title: "Library API",
+            title: "Car Rental API",
             version: "1.0.0",
-            description: "A simple Express VacQ API",
+            description:
+                "Car Rental Booking API — manage car providers, bookings, reviews (LLM-moderated), votes, and user profiles.",
         },
         servers: [
             {
                 url: "http://localhost:5000/api/v1",
+                description: "Development server",
             },
         ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: "http",
+                    scheme: "bearer",
+                    bearerFormat: "JWT",
+                },
+            },
+        },
     },
     apis: ["./routes/*.js"],
 };
