@@ -5,3 +5,4 @@ config/config.env
 .vercel
 .env*.local
 .env
+coverage/
