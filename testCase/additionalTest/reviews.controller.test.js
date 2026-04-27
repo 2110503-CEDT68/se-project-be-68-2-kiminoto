@@ -157,7 +157,9 @@ describe("Additional - Reviews controller", () => {
             });
             global.fetch.mockResolvedValue({
                 json: jest.fn().mockResolvedValue({
-                    choices: [{ message: { content: "REJECTED|Offensive language" } }],
+                    choices: [
+                        { message: { content: "REJECTED|Offensive language" } },
+                    ],
                 }),
             });
 
@@ -342,6 +344,29 @@ describe("Additional - Reviews controller", () => {
                 success: false,
                 message: "Cannot update review",
             });
+        });
+
+        it("returns 200 when updated comment is accepted", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1", role: "user" },
+                body: { comment: "new good comment" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({
+                user: "user-1",
+                review: { rating: 4, comment: "old" },
+                save: jest.fn().mockResolvedValue(),
+            });
+            global.fetch.mockResolvedValue({
+                json: jest.fn().mockResolvedValue({
+                    choices: [{ message: { content: "ACCEPTED" } }],
+                }),
+            });
+
+            await updateReview(req, res);
+            expect(res.status).toHaveBeenCalledWith(200);
         });
     });
 
