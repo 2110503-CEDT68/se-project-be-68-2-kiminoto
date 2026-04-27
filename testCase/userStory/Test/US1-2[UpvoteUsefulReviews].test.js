@@ -91,9 +91,64 @@ describe("US1-2 Upvote useful reviews", () => {
 
             expect(res.status).toHaveBeenCalledWith(404);
         });
+
+        it("returns 500 when add upvote fails", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: { rating: 4 } });
+            Vote.findOne.mockRejectedValue(new Error("db broken"));
+
+            await addUpvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error adding upvote",
+            });
+        });
     });
 
     describe("removeUpvote", () => {
+        it("returns 404 when booking does not exist", async () => {
+            const req = {
+                params: { bookingId: "missing-booking" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await removeUpvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
+        it("returns 404 when booking has no review", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await removeUpvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
         it("removes existing upvote", async () => {
             const req = {
                 params: { bookingId: "booking-1" },
@@ -128,9 +183,58 @@ describe("US1-2 Upvote useful reviews", () => {
 
             expect(res.status).toHaveBeenCalledWith(404);
         });
+
+        it("returns 500 when remove upvote query fails", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.findOneAndDelete.mockRejectedValue(new Error("db broken"));
+
+            await removeUpvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error removing upvote",
+            });
+        });
     });
 
     describe("getUpvoteCount", () => {
+        it("returns 404 when booking does not exist", async () => {
+            const req = { params: { bookingId: "missing-booking" } };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await getUpvoteCount(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
+        it("returns 404 when booking has no review", async () => {
+            const req = { params: { bookingId: "booking-1" } };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await getUpvoteCount(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
         it("returns total upvote count for booking review", async () => {
             const req = { params: { bookingId: "booking-1" } };
             const res = createMockRes();
@@ -163,6 +267,65 @@ describe("US1-2 Upvote useful reviews", () => {
             expect(res.json).toHaveBeenCalledWith({
                 success: false,
                 message: "Error fetching upvote count",
+            });
+        });
+    });
+
+    describe("getVoteSummary", () => {
+        const { getVoteSummary } = require("../../../controllers/votes");
+
+        it("returns 404 when booking does not exist", async () => {
+            const req = {
+                params: { bookingId: "missing-booking" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await getVoteSummary(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
+        it("returns 404 when booking has no review", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await getVoteSummary(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
+        it("returns 500 when summary query fails", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.countDocuments.mockRejectedValue(new Error("db broken"));
+
+            await getVoteSummary(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error fetching vote summary",
             });
         });
     });

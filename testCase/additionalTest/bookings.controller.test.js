@@ -51,6 +51,23 @@ describe("Additional - Bookings controller", () => {
             expect(res.status).toHaveBeenCalledWith(200);
         });
 
+        it("returns all bookings for admin without provider filter", async () => {
+            const req = {
+                user: { id: "admin-1", role: "admin" },
+                params: {},
+            };
+            const res = createMockRes();
+
+            Booking.find.mockReturnValue({
+                populate: jest.fn().mockResolvedValue([{ _id: "booking-1" }]),
+            });
+
+            await getBookings(req, res);
+
+            expect(Booking.find).toHaveBeenCalledWith();
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
+
         it("returns 400 when booking query fails", async () => {
             const req = { user: { id: "user-1", role: "user" }, params: {} };
             const res = createMockRes();
@@ -94,6 +111,23 @@ describe("Additional - Bookings controller", () => {
             await getBooking(req, res);
 
             expect(res.status).toHaveBeenCalledWith(404);
+        });
+
+        it("returns 500 when get booking query fails", async () => {
+            const req = { params: { id: "booking-1" } };
+            const res = createMockRes();
+
+            Booking.findById.mockReturnValue({
+                populate: jest.fn().mockRejectedValue(new Error("db broken")),
+            });
+
+            await getBooking(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Cannot find Booking",
+            });
         });
     });
 
@@ -154,6 +188,25 @@ describe("Additional - Bookings controller", () => {
             expect(Booking.create).toHaveBeenCalledWith(req.body);
             expect(res.status).toHaveBeenCalledWith(200);
         });
+
+        it("returns 500 when provider lookup fails", async () => {
+            const req = {
+                params: { carProviderId: "provider-1" },
+                user: { id: "user-1", role: "user" },
+                body: { bookDate: "2026-04-27" },
+            };
+            const res = createMockRes();
+
+            CarProvider.findById.mockRejectedValue(new Error("db broken"));
+
+            await addBooking(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Cannot create Booking",
+            });
+        });
     });
 
     describe("updateBooking", () => {
@@ -209,6 +262,25 @@ describe("Additional - Bookings controller", () => {
             expect(req.body.review).toBeUndefined();
             expect(res.status).toHaveBeenCalledWith(200);
         });
+
+        it("returns 500 when booking lookup fails on update", async () => {
+            const req = {
+                params: { id: "booking-1" },
+                user: { id: "user-1", role: "user" },
+                body: { status: "completed" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockRejectedValue(new Error("db broken"));
+
+            await updateBooking(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Cannot update Booking",
+            });
+        });
     });
 
     describe("deleteBooking", () => {
@@ -257,6 +329,24 @@ describe("Additional - Bookings controller", () => {
 
             expect(booking.deleteOne).toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(200);
+        });
+
+        it("returns 500 when booking lookup fails on delete", async () => {
+            const req = {
+                params: { id: "booking-1" },
+                user: { id: "user-1", role: "user" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockRejectedValue(new Error("db broken"));
+
+            await deleteBooking(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Cannot delete Booking",
+            });
         });
     });
 });

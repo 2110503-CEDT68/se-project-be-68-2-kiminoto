@@ -101,4 +101,42 @@ describe("US2-4 Delete profile information", () => {
             error: "Avatar not found.",
         });
     });
+
+    it("returns 400 when deleting avatar query fails", async () => {
+        const req = { user: { id: "user-1" } };
+        const res = createMockRes();
+
+        User.findById.mockReturnValue({
+            select: jest.fn().mockRejectedValue(new Error("db broken")),
+        });
+
+        await deleteAvatar(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: "db broken",
+        });
+    });
+
+    it("returns 400 when deleting existing field save fails", async () => {
+        const req = {
+            body: { key: "facebook" },
+            user: {
+                profile: {
+                    fields: [{ key: "facebook", value: "alice.fb" }],
+                },
+                save: jest.fn().mockRejectedValue(new Error("db broken")),
+            },
+        };
+        const res = createMockRes();
+
+        await deleteProfileField(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: "db broken",
+        });
+    });
 });

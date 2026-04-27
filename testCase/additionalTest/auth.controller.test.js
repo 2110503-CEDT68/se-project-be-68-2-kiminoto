@@ -43,6 +43,37 @@ describe("Additional - Auth controller", () => {
         );
     });
 
+    it("sets secure cookie flag in production", async () => {
+        process.env.NODE_ENV = "production";
+
+        const req = {
+            body: {
+                name: "Alice",
+                tel: "0000000000",
+                email: "alice@example.com",
+                password: "secret123",
+                role: "user",
+            },
+        };
+        const res = createMockRes();
+
+        User.create.mockResolvedValue({
+            _id: "user-1",
+            getSignedJwtToken: jest.fn().mockReturnValue("token-1"),
+        });
+
+        await register(req, res);
+
+        expect(res.cookie).toHaveBeenCalledWith(
+            "token",
+            "token-1",
+            expect.objectContaining({
+                httpOnly: true,
+                secure: true,
+            }),
+        );
+    });
+
     it("returns 400 when register throws", async () => {
         const req = { body: { email: "dup@example.com" } };
         const res = createMockRes();

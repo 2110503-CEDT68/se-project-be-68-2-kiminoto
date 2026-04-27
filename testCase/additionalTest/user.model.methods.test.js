@@ -113,4 +113,17 @@ describe("Additional - User model methods", () => {
             "Custom fields length exceeds limit of 5.",
         );
     });
+
+    it("passes validation when profile object is missing", async () => {
+        const user = new User({
+            name: "Alice",
+            tel: "0000000000",
+            email: "alice@example.com",
+            password: "plain-password",
+        });
+
+        user.profile = undefined;
+
+        await expect(user.validate()).resolves.toBeUndefined();
+    });
 });

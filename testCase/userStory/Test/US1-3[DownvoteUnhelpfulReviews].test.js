@@ -91,9 +91,64 @@ describe("US1-3 Downvote unhelpful reviews", () => {
 
             expect(res.status).toHaveBeenCalledWith(404);
         });
+
+        it("returns 500 when add downvote fails", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: { rating: 4 } });
+            Vote.findOne.mockRejectedValue(new Error("db broken"));
+
+            await addDownvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error adding downvote",
+            });
+        });
     });
 
     describe("removeDownvote", () => {
+        it("returns 404 when booking does not exist", async () => {
+            const req = {
+                params: { bookingId: "missing-booking" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await removeDownvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
+        it("returns 404 when booking has no review", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await removeDownvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
         it("removes existing downvote", async () => {
             const req = {
                 params: { bookingId: "booking-1" },
@@ -128,9 +183,58 @@ describe("US1-3 Downvote unhelpful reviews", () => {
 
             expect(res.status).toHaveBeenCalledWith(404);
         });
+
+        it("returns 500 when remove downvote query fails", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: { rating: 5 } });
+            Vote.findOneAndDelete.mockRejectedValue(new Error("db broken"));
+
+            await removeDownvote(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Error removing downvote",
+            });
+        });
     });
 
     describe("getDownvoteCount", () => {
+        it("returns 404 when booking does not exist", async () => {
+            const req = { params: { bookingId: "missing-booking" } };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await getDownvoteCount(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
+        it("returns 404 when booking has no review", async () => {
+            const req = { params: { bookingId: "booking-1" } };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({ review: null });
+
+            await getDownvoteCount(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No review exists for this booking",
+            });
+        });
+
         it("returns total downvote count for booking review", async () => {
             const req = { params: { bookingId: "booking-1" } };
             const res = createMockRes();

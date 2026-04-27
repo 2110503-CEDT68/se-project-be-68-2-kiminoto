@@ -86,4 +86,25 @@ describe("US2-3 Edit profile information", () => {
             error: "Invalid data URL format.",
         });
     });
+
+    it("returns 400 when saving edited profile field fails", async () => {
+        const req = {
+            body: { key: "line", value: "new-line-id" },
+            user: {
+                profile: {
+                    fields: [{ key: "line", value: "old-line-id" }],
+                },
+                save: jest.fn().mockRejectedValue(new Error("db broken")),
+            },
+        };
+        const res = createMockRes();
+
+        await editProfileField(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: "db broken",
+        });
+    });
 });

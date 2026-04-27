@@ -83,6 +83,28 @@ describe("Additional - Car providers controller", () => {
         expect(chain.limit).toHaveBeenCalledWith(5);
     });
 
+    it("rewrites query operators (gte/lt/in) for mongo filtering", async () => {
+        const req = {
+            query: {
+                price: { gte: "100", lt: "500" },
+                district: { in: ["A", "B"] },
+            },
+        };
+        const res = createMockRes();
+
+        const chain = createFindChain([]);
+        CarProvider.find.mockReturnValue(chain);
+        CarProvider.countDocuments.mockResolvedValue(0);
+
+        await getCarProviders(req, res);
+
+        expect(CarProvider.find).toHaveBeenCalledWith({
+            price: { $gte: "100", $lt: "500" },
+            district: { $in: ["A", "B"] },
+        });
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
     it("returns 400 when listing providers fails", async () => {
         const req = { query: {} };
         const res = createMockRes();
@@ -131,6 +153,23 @@ describe("Additional - Car providers controller", () => {
         expect(res.status).toHaveBeenCalledWith(404);
     });
 
+    it("returns 400 when provider lookup fails", async () => {
+        const req = { params: { id: "provider-1" } };
+        const res = createMockRes();
+
+        CarProvider.findById.mockReturnValue({
+            populate: jest.fn().mockRejectedValue(new Error("db broken")),
+        });
+
+        await getCarProvider(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: "db broken",
+        });
+    });
+
     it("creates provider", async () => {
         const req = { body: { name: "New Provider" } };
         const res = createMockRes();
@@ -140,6 +179,21 @@ describe("Additional - Car providers controller", () => {
         await createCarProvider(req, res);
 
         expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it("returns 400 when create provider fails", async () => {
+        const req = { body: { name: "New Provider" } };
+        const res = createMockRes();
+
+        CarProvider.create.mockRejectedValue(new Error("validation failed"));
+
+        await createCarProvider(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            message: "validation failed",
+        });
     });
 
     it("updates provider or returns 404", async () => {
@@ -157,6 +211,24 @@ describe("Additional - Car providers controller", () => {
         CarProvider.findByIdAndUpdate.mockResolvedValue(null);
         await updateCarProvider(req, missingRes);
         expect(missingRes.status).toHaveBeenCalledWith(404);
+    });
+
+    it("returns 400 when update provider fails", async () => {
+        const req = {
+            params: { id: "provider-1" },
+            body: { name: "Updated" },
+        };
+        const res = createMockRes();
+
+        CarProvider.findByIdAndUpdate.mockRejectedValue(new Error("db broken"));
+
+        await updateCarProvider(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: "db broken",
+        });
     });
 
     it("deletes provider and related bookings", async () => {
@@ -187,5 +259,20 @@ describe("Additional - Car providers controller", () => {
         await deleteCarProvider(req, res);
 
         expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it("returns 400 when delete provider lookup fails", async () => {
+        const req = { params: { id: "provider-1" } };
+        const res = createMockRes();
+
+        CarProvider.findById.mockRejectedValue(new Error("db broken"));
+
+        await deleteCarProvider(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: "db broken",
+        });
     });
 });

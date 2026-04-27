@@ -15,6 +15,25 @@ describe("Additional - Reviews controller", () => {
     });
 
     describe("addReview", () => {
+        it("returns 404 when booking is not found", async () => {
+            const req = {
+                params: { bookingId: "missing-booking" },
+                user: { id: "user-1", role: "user" },
+                body: { rating: 5, comment: "Very good service" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await addReview(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
         it("adds review for completed booking with approved moderation", async () => {
             const req = {
                 params: { bookingId: "booking-1" },
@@ -175,9 +194,69 @@ describe("Additional - Reviews controller", () => {
                 message: "Error during content moderation",
             });
         });
+
+        it("returns 500 when find booking fails", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1", role: "user" },
+                body: { rating: 5, comment: "Great" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockRejectedValue(new Error("db broken"));
+
+            await addReview(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Cannot submit review",
+            });
+        });
     });
 
     describe("updateReview", () => {
+        it("returns 404 when booking is not found for update", async () => {
+            const req = {
+                params: { bookingId: "missing-booking" },
+                user: { id: "user-1", role: "user" },
+                body: { rating: 2 },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await updateReview(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
+        it("returns 401 when non-owner updates review", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-2", role: "user" },
+                body: { rating: 2 },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({
+                user: "user-1",
+                review: { rating: 4, comment: "old" },
+            });
+
+            await updateReview(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "User user-2 is not authorized to update this review",
+            });
+        });
+
         it("updates rating without moderation when comment is missing", async () => {
             const req = {
                 params: { bookingId: "booking-1" },
@@ -240,9 +319,51 @@ describe("Additional - Reviews controller", () => {
 
             expect(res.status).toHaveBeenCalledWith(404);
         });
+
+        it("returns 500 when update review moderation call throws", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1", role: "user" },
+                body: { comment: "new comment" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue({
+                user: "user-1",
+                review: { rating: 4, comment: "old" },
+                save: jest.fn(),
+            });
+            global.fetch.mockRejectedValue(new Error("api down"));
+
+            await updateReview(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Cannot update review",
+            });
+        });
     });
 
     describe("deleteReview", () => {
+        it("returns 404 when booking is not found for delete", async () => {
+            const req = {
+                params: { bookingId: "missing-booking" },
+                user: { id: "user-1", role: "user" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockResolvedValue(null);
+
+            await deleteReview(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "No booking with the id of missing-booking",
+            });
+        });
+
         it("deletes existing review", async () => {
             const req = {
                 params: { bookingId: "booking-1" },
@@ -296,6 +417,24 @@ describe("Additional - Reviews controller", () => {
             await deleteReview(req, res);
 
             expect(res.status).toHaveBeenCalledWith(401);
+        });
+
+        it("returns 500 when find booking fails for delete", async () => {
+            const req = {
+                params: { bookingId: "booking-1" },
+                user: { id: "user-1", role: "user" },
+            };
+            const res = createMockRes();
+
+            Booking.findById.mockRejectedValue(new Error("db broken"));
+
+            await deleteReview(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: "Cannot delete review",
+            });
         });
     });
 });
