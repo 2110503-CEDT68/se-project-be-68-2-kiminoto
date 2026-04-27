@@ -1,5 +1,34 @@
 const User = require("../models/User");
 
+const normalizeKey = (key) => key.toLowerCase().replace(/[\s_-]/g, "");
+
+const validateFieldByType = (key, value) => {
+    const normalized = normalizeKey(key);
+
+    if (normalized === "displayname" || normalized === "nickname") {
+        if (value.length < 2 || value.length > 40) {
+            return "Display name must be between 2 and 40 characters";
+        }
+    }
+
+    if (normalized === "facebook" || normalized === "fb") {
+        const valid = /^[\p{L}\p{M}\p{N}. ]{5,}$/u.test(value);
+        if (!valid) return "Facebook name must be at least 5 characters and use only letters, numbers, spaces, or periods";
+    }
+
+    if (normalized === "instagram" || normalized === "ig") {
+        const valid = /^(?!.*\.\.)(?!.*\.$)[^\W][\w.]{0,29}$/.test(value);
+        if (!valid) return "Instagram username is invalid";
+    }
+
+    if (normalized === "line" || normalized === "lineid") {
+        const valid = /^[a-z0-9._-]{4,20}$/.test(value);
+        if (!valid) return "LINE ID must be 4-20 chars using lowercase letters, numbers, dot, underscore, or hyphen";
+    }
+
+    return null;
+};
+
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_CONTENT_TYPES = new Set([
     "image/png",
@@ -204,6 +233,12 @@ exports.deleteAvatar = async (req, res, next) => {
 exports.editProfileField = async (req, res, next) => {
     try {
         const { key, value } = req.body;
+
+        const validationError = validateFieldByType(key, value);
+        if (validationError) {
+            res.status(400).json({ success: false, error: validationError });
+            return;
+        }
 
         const existingKeys = req.user.profile.fields.map((data) => data.key);
 
